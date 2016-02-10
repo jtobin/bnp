@@ -1,3 +1,5 @@
+set.seed(42)
+
 require(gtools)
 
 #  finite gaussian mixture model
@@ -7,11 +9,11 @@ require(gtools)
 #  c | p           ~ multinomial(p)
 #  l               ~ gaussian(mu_y, var_y)
 #  r               ~ gamma(1, prec_y)
-#  mu | c, l, r    ~ gaussian(l, r^-1)
-#  s  | c, b, w    ~ gamma(b, w^-1)
+#  mu | c, l, r    ~ gaussian(l, 1 / r)
+#  s  | c, b, w    ~ gamma(b, 1 / w)
 #  b               ~ inverse-gamma(1, 1)
 #  w               ~ gamma(1, var_y)
-#  y | p, c, mu, s ~ <p, normal(mu, s^-1)>
+#  y | p, c, mu, s ~ <p, normal(mu, 1 / s)>
 
 test_data = list(
     c(1.2, 1.1, 1.23, 0.93, 0.89, 1.01)
