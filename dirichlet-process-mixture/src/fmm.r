@@ -1,5 +1,6 @@
 set.seed(42)
 
+require(actuar)
 require(ars)
 require(gtools)
 
@@ -17,26 +18,21 @@ require(gtools)
 #  y | p, c, mu, s ~ <p, normal(mu, 1 / s)>
 
 test_data = list(
-    c(1.2, 1.1, 1.23, 0.93, 0.89, 1.01)
-  , c(0.3, 0.34, 0.32, 0.29, 0.31)
-  , c(-0.5, -0.1, -0.21, 0.02, -0.81, 0.08, -0.33)
+    rnorm(801, 3.5, 1)
+  , rnorm(300, 0.3, 0.8)
+  , rnorm(722, -4.2, 0.5)
   )
 
 # observations
 
-y_prior = function(mu, s, p) {
-  density = function(y) { sum(p * dnorm(y, mu, 1 / s)) }
-  sampler = function() {
-      c   = drop(rmultinom(1, 1, prob = p))
-      muc = drop(c %*% mu)
-      sc  = drop(c %*% s)
-      rnorm(1, muc, 1 / sc)
-    }
-  list(density, sampler)
-  }
+dy_prior = function(y, mu, s, p) sum(p * dnorm(y, mu, 1 / s))
 
-dy_prior = function(y, mu, s, p) { y_prior(mu, s, p)[[1]](y) }
-ry_prior = function(mu, s, p) { y_prior(mu, s, p)[[2]] }
+ry_prior = function(mu, s, p) {
+   c   = drop(rmultinom(1, 1, prob = p))
+   muc = drop(c %*% mu)
+   sc  = drop(c %*% s)
+   rnorm(1, muc, 1 / sc)
+  }
 
 # mu (component means) and parameter models
 
@@ -94,14 +90,8 @@ r_posterior = function(y, mu, l) {
 dr_posterior = function(r, y, mu, l) { r_posterior(y, mu, l)[[1]](r) }
 rr_posterior = function(y, mu, l) { r_posterior(y, mu, l)[[2]] }
 
-mu_prior = function(l, r) {
-  density = function(mu) { dnorm(mu, l, 1 / r) }
-  sampler = function(k) { rnorm(k, l, 1 / r) }
-  list(density, sampler)
-  }
-
-dmu_prior = function(mu, l, r) { mu_prior(l, r)[[1]](mu) }
-rmu_prior = function(k, l, r) { mu_prior(l, r)[[2]](k) }
+dmu_prior = function(mu, l, r) dnorm(mu, l, 1 / r)
+rmu_prior = function(k, l, r) rnorm(k, l, 1 / r)
 
 mu_posterior = function(y, s, l, r) {
   n    = unlist(lapply(y, length))
@@ -119,14 +109,8 @@ rmu_posterior = function(y, s, l, r) { mu_posterior(y, s, l, r)[[2]] }
 
 # s (component precisions) and parameter models
 
-s_prior = function(b, w) {
-  density = function(s) { dgamma(s, b, 1 / w) }
-  sampler = function(k) { rgamma(k, b, 1 / w) }
-  list(density, sampler)
-  }
-
-ds_prior = function(s, b, w) { s_prior(b, w)[[1]](s) }
-rs_prior = function(k, b, w) { s_prior(b, w)[[2]](k) }
+ds_prior = function(s, b, w) dgamma(s, b, 1 / w)
+rs_prior = function(k, b, w) rgamma(k, b, 1 / w)
 
 s_posterior = function(y, mu, b, w) {
   n       = unlist(lapply(y, length))
@@ -167,100 +151,80 @@ w_posterior = function(y, s, b) {
 dw_posterior = function(w, y, s, b) { w_posterior(y, s, b)[[1]](w) }
 rw_posterior = function(y, s, b) { w_posterior(y, s, b)[[2]] }
 
-b_prior = function() {
-  density = function(b) { dgamma(1 / b, 1, 1) }
-  sampler = 1 / rgamma(1, 1, 1)
-  list(density, sampler)
-  }
-
-db_prior = function(b) { b_prior()[[1]](b) }
-rb_prior = function() { b_prior()[[2]] }
+db_prior = function(b) dinvgamma(b, 1, 1)
+rb_prior = function() rinvgamma(1, 1, 1)
 
 b_posterior = function(y, s, w) {
   k = length(y)
 
-  # density = function(b) {
-  #   t0 = gamma(b / 2) ^ (- k)
-  #   t1 = exp(-1 / (2 * b))
-  #   t2 = (b / 2) ^ ((k * b - 3) / 2)
-  #   t3 = prod((s * w) ^ (b / 2) * exp(- b * s * w / 2))
-
-  #   t0 * t1 * t2 * t3
-  #   }
-
-  # FIXME might be able to clean this up; don't really need the expressions
-  # since i can't use symbolic diff
-
-  log_density_expr = expression(
-    - k * lgamma(b / 2) -
+  log_density = function(b) {
+    -k * lgamma(b / 2) -
     (1 / (2 * b)) +
-    ((k * b - 3) / 2) * log (b / 2) +
-    sum((b / 2) * log (s * w) - (b * s * w) / 2))
+    ((k * b - 3) / 2) * log(b / 2) +
+    b / 2 * sum((log(s * w)) - w * s)
+    }
 
-  density = function(b) exp(eval(log_density_expr))
+  density = function(b) { exp(log_density(b)) }
 
   sampler = function() {
 
-      log_density_xformed_expr = expression(log(b) + eval(log_density_expr, b))
-      log_density_xformed      = function(b) { eval(log_density_xformed_expr) }
+    # CHECK do i really need to transform this?  is it log-concave already?
+    density_xformed     = function(b) { b * density(b) }
+    log_density_xformed = function(b) { log(density_xformed(b)) }
 
-      grad_log_density_xformed = function(b) {
-          1 / b - k * digamma(b / 2) +
-          1 / (2 * b ^ 2) + k / 2 * log(b / 2) +
-          2 / b * (k * b - 3) / 2 +
-          sum(log(s * w) / 2 - s * w / 2)
-        }
+    grad_log_density_xformed = function(b) {
+        1 / b - k * digamma(b / 2) +
+        1 / (2 * b ^ 2) +
+        k / 2 * log(b / 2) + (k * b - 3) / b +
+        sum((log(s * w)) - w * s) / 2
+      }
 
+    # error due to non-log-concavity detection
+    val = ars(
+        n = 1
+      , f = log_density_xformed
+      , fprima = grad_log_density_xformed
+      , x = c(0.01, 0.5, 1)
+      , lb = T
+      , xlb = 0.01
+      , ub = T
+      , xub = 10)
 
-    }
+      exp(sample(val, 1))
+  }
 
   list(density, sampler)
   }
 
 db_posterior = function(b, y, s, w) { b_posterior(y, s, w)[[1]](b) }
-rb_posterior = function(y, s, w) { b_posterior(y, s, w)[[2]] }
+rb_posterior = function(y, s, w) { b_posterior(y, s, w)[[2]]() }
 
 # p (mixing probabilities), n (occupation numbers) and parameter models
-# note that the distribution of cluster labels can be written in terms of the
-#  dirichlet concentration parameter
 
-p_prior = function(a) {
-  density = function(p) { ddirichlet(p, a) }
-  sampler = drop(rdirichlet(1, a))
-  list(density, sampler)
-  }
+dp_prior = function(p, a) ddirichlet(p, a)
+rp_prior = function(a) drop(rdirichlet(1, a))
 
-dp_prior = function(p, a) { p_prior(a)[[1]](p) }
-rp_prior = function(a) { p_prior(a)[[2]] }
+dn_prior = function(n, p) dmultinom(n, prob = p)
+rn_prior = function(p) drop(rmultinom(1, size = 1, prob = p))
 
-n_prior = function(p) {
-  density = function(n) { dmultinom(n, prob = p) }
-  sampler = drop(rmultinom(1, size = 1, prob = p))
-  list(density, sampler)
-  }
-
-dn_prior = function(n, p) { n_prior(p)[[1]](n) }
-rn_prior = function(p) { n_prior(p)[[2]] }
-
-a_prior = function() {
-  density = function(a) { dgamma(1 / a, 1, 1) }
-  sampler = 1 / rgamma(1, 1, 1)
-  list(density, sampler)
-  }
-
-da_prior = function(a) { a_prior()[[1]](a) }
-ra_prior = function() { a_prior()[[2]] }
+da_prior = function(a) dinvgamma(a, 1, 1)
+ra_prior = rinvgamma(1, 1, 1)
 
 a_posterior = function(k, n) {
-  density = function(a) {
-    a ^ (k - 3 / 2) * exp(-1 / (2 * a)) * gamma(a) / gamma(n + a)
+  log_density = function(a) {
+    (k - 3 / 2) * log(a) - 1 / (2 * a) + lgamma(a) - lgamma(n + a)
     }
 
+  density = function(a) { exp(log_density(a)) }
+
   # log(a) ~ log-concave and can thus be sampled via ARS
-  # CHECK isn't 'a' ~ log-concave as well?  do i need the transformation?
-  #       paper claims yes but seems like i don't
+  #
+  # note that f(log(a)) = a * f(a), or log(f(log(a))) = log a + log f(a)
+  #
+  # ARS flakes out when k / n is sufficiently small (i.e. when 'a' would be
+  # extremely large).  probably rare for this to happen in practice, so 'a' is
+  # capped at 20 here
   sampler = function() {
-    # f(log(a)) ~ a * f(a)
     log_xformed = expression(
       (k - 1 / 2) * log(a) - 1 / (2 * a) + lgamma(a) - lgamma(n + a))
     dens_log_xformed = function(a) eval(log_xformed)
@@ -268,11 +232,8 @@ a_posterior = function(k, n) {
     grad_log_xformed = D(log_xformed, 'a')
     grad_dens_log_xformed = function(a) eval(grad_log_xformed)
 
-    # ARS seems to flake out when k / n is sufficiently small (i.e. when 'a'
-    # would be extremely large).  probably rare for this to happen in practice,
-    # so 'a' is capped at 20 below.
     val = ars(
-        n = 30
+        n = 1
       , f = dens_log_xformed
       , fprima = grad_dens_log_xformed
       , x = c(0.51, 1, 1.49)
@@ -281,7 +242,7 @@ a_posterior = function(k, n) {
       , ub = T
       , xub = 20.0)
 
-    exp(sample(val, 1))
+    exp(val)
     }
   list(density, sampler)
   }
@@ -313,4 +274,16 @@ rmodel_prior = function(y) { model_prior(y)[[1]] }
 # observations from that configuration
 
 rmodel_conditional_prior = function(n, y) { model_prior(y)[[2]](n) }
+
+# debug
+
+# y = test_data
+# k = length(y)
+# l = rl_obj_prior(y)
+# r = rr_obj_prior(y)
+# mu = rmu_prior(k, l, r)
+# w = rw_obj_prior(y)
+# b = rb_prior()
+# s = rs_prior(k, b, w)
+
 
