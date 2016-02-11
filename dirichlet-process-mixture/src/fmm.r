@@ -1,5 +1,6 @@
 set.seed(42)
 
+require(ars)
 require(gtools)
 
 #  finite gaussian mixture model
@@ -26,9 +27,10 @@ test_data = list(
 y_prior = function(mu, s, p) {
   density = function(y) { sum(p * dnorm(y, mu, 1 / s)) }
   sampler = function() {
-      c = t(rmultinom(1, 1, prob = p))
-      v = as.vector(c * rnorm(1, mu, 1 / s))
-      v[which(v != 0)]
+      c   = drop(rmultinom(1, 1, prob = p))
+      muc = drop(c %*% mu)
+      sc  = drop(c %*% s)
+      rnorm(1, muc, 1 / sc)
     }
   list(density, sampler)
   }
@@ -175,18 +177,43 @@ db_prior = function(b) { b_prior()[[1]](b) }
 rb_prior = function() { b_prior()[[2]] }
 
 b_posterior = function(y, s, w) {
-  k  = length(y)
+  k = length(y)
 
-  density = function(b) {
-    t0 = gamma(b / 2) ^ (- k)
-    t1 = exp(-1 / (2 * b))
-    t2 = (b / 2) ^ ((k * b - 3) / 2)
-    t3 = prod((s * w) ^ (b / 2) * exp(- b * s * w / 2))
+  # density = function(b) {
+  #   t0 = gamma(b / 2) ^ (- k)
+  #   t1 = exp(-1 / (2 * b))
+  #   t2 = (b / 2) ^ ((k * b - 3) / 2)
+  #   t3 = prod((s * w) ^ (b / 2) * exp(- b * s * w / 2))
 
-    t0 + t1 + t2 + t3
+  #   t0 * t1 * t2 * t3
+  #   }
+
+  # FIXME might be able to clean this up; don't really need the expressions
+  # since i can't use symbolic diff
+
+  log_density_expr = expression(
+    - k * lgamma(b / 2) -
+    (1 / (2 * b)) +
+    ((k * b - 3) / 2) * log (b / 2) +
+    sum((b / 2) * log (s * w) - (b * s * w) / 2))
+
+  density = function(b) exp(eval(log_density_expr))
+
+  sampler = function() {
+
+      log_density_xformed_expr = expression(log(b) + eval(log_density_expr, b))
+      log_density_xformed      = function(b) { eval(log_density_xformed_expr) }
+
+      grad_log_density_xformed = function(b) {
+          1 / b - k * digamma(b / 2) +
+          1 / (2 * b ^ 2) + k / 2 * log(b / 2) +
+          2 / b * (k * b - 3) / 2 +
+          sum(log(s * w) / 2 - s * w / 2)
+        }
+
+
     }
 
-  sampler = NULL
   list(density, sampler)
   }
 
@@ -199,7 +226,7 @@ rb_posterior = function(y, s, w) { b_posterior(y, s, w)[[2]] }
 
 p_prior = function(a) {
   density = function(p) { ddirichlet(p, a) }
-  sampler = rdirichlet(1, a)
+  sampler = drop(rdirichlet(1, a))
   list(density, sampler)
   }
 
@@ -208,7 +235,7 @@ rp_prior = function(a) { p_prior(a)[[2]] }
 
 n_prior = function(p) {
   density = function(n) { dmultinom(n, prob = p) }
-  sampler = rmultinom(1, size = 1, prob = p)
+  sampler = drop(rmultinom(1, size = 1, prob = p))
   list(density, sampler)
   }
 
@@ -229,11 +256,38 @@ a_posterior = function(k, n) {
     a ^ (k - 3 / 2) * exp(-1 / (2 * a)) * gamma(a) / gamma(n + a)
     }
 
-  sampler = NULL
+  # log(a) ~ log-concave and can thus be sampled via ARS
+  # CHECK isn't 'a' ~ log-concave as well?  do i need the transformation?
+  #       paper claims yes but seems like i don't
+  sampler = function() {
+    # f(log(a)) ~ a * f(a)
+    log_xformed = expression(
+      (k - 1 / 2) * log(a) - 1 / (2 * a) + lgamma(a) - lgamma(n + a))
+    dens_log_xformed = function(a) eval(log_xformed)
+
+    grad_log_xformed = D(log_xformed, 'a')
+    grad_dens_log_xformed = function(a) eval(grad_log_xformed)
+
+    # ARS seems to flake out when k / n is sufficiently small (i.e. when 'a'
+    # would be extremely large).  probably rare for this to happen in practice,
+    # so 'a' is capped at 20 below.
+    val = ars(
+        n = 30
+      , f = dens_log_xformed
+      , fprima = grad_dens_log_xformed
+      , x = c(0.51, 1, 1.49)
+      , lb = T
+      , xlb = 0.001
+      , ub = T
+      , xub = 20.0)
+
+    exp(sample(val, 1))
+    }
   list(density, sampler)
   }
 
 da_posterior = function(a, k, n) { a_posterior(k, n)[[1]](a) }
+ra_posterior = function(k, n) { a_posterior(k, n)[[2]]() }
 
 # model
 
@@ -242,13 +296,21 @@ model_prior = function(y) {
   l  = rl_obj_prior(y)
   r  = rr_obj_prior(y)
   mu = rmu_prior(k, l, r)
+  b  = rb_prior()
+  w  = rw_obj_prior(y)
+  s  = rs_prior(k, b, w)
+  a  = ra_prior()
+  p  = rp_prior(rep(a, k))
 
-  b = rb_prior()
-  w = rw_obj_prior(y)
-  s = rs_prior(k, b, w)
-
-  a = ra_prior()
-  p = rp_prior(rep(a, k))
-
-  ry_prior(mu, s, p)
+  sampler = ry_prior(mu, s, p)
+  conditional_sampler = function(n) { replicate(n, ry_prior(mu, s, p)()) }
+  list(sampler, conditional_sampler)
   }
+
+rmodel_prior = function(y) { model_prior(y)[[1]] }
+
+# conditional model prior; sample a cluster configuration and then sample many
+# observations from that configuration
+
+rmodel_conditional_prior = function(n, y) { model_prior(y)[[2]](n) }
+
