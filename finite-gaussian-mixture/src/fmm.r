@@ -26,7 +26,7 @@ rp_conditional = function(n, a0) {
 rc_model = function(n, p) drop(rmultinom(1, size = n, prob = p))
 
 # FIXME too easy to generate NaN probabilities when precisions are too large
-#       may not be correct at all
+#       may not be correct at all.  perplexing.
 rc_conditional = function(y, p0, mu, s) {
   k        = length(p0)
   reducer  = function(p, m, prec) { p * dnorm(y, m, 1 / prec) }
@@ -53,8 +53,8 @@ rmu_conditional = function(y, s, l, r) {
 
 rs_model = function(k, b, w) rgamma(k, b, 1 / w)
 
+# FIXME seems to be generating enormous precisions
 rs_conditional = function(y, mu, b, w) {
-
   k = length(y)
   c = sapply(y, length)
 
@@ -65,10 +65,8 @@ rs_conditional = function(y, mu, b, w) {
   a   = b + c
   bet = a / (w * b + ss)
 
-  # NOTE (jtobin): must be a better way to do this
-  params  = data.frame(a = a, bet = bet)
-  reducer = function(row) { rgamma(1, row[1], row[2]) }
-  apply(params, MARGIN = 1, reducer)
+  reducer = function(a, b) { rgamma(1, a, b) }
+  mapply(reducer, a, bet)
   }
 
 # parameter model (prior)
@@ -156,6 +154,7 @@ test_data = list(
   , rnorm(38, 0.3, 1)
   , rnorm(90, -8.2, 0.5)
   )
+
 # y = list(
 #     rnorm(801, 3.5, 1)
 #   , rnorm(300, 0.3, 0.8)
