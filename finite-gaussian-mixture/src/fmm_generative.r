@@ -16,7 +16,7 @@ parameter_model = function(k, n) {
   }
 
 data_model = function(config) {
-  sampler = function(y, m, s) rnorm(y, m, 1 / s)
+  sampler = function(y, m, s) rnorm(y, m, 1 / s) # FIXME this may not do what i expect
   mapply(sampler, config[[1]], config[[2]], config[[3]])
   }
 
