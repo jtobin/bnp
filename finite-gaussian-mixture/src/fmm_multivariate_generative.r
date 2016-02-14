@@ -11,8 +11,8 @@ precision_model = function(k, b, w) rinvwishart(k, b, solve(w))
 parameter_model = function(m, k, n) {
   p  = mixing_model(k, 1)
   c  = delabel(lapply(label_model(n, p), list))
-  mu = delabel(apply(location_model(k, rep(0, m), diag(10, m)), MARGIN = 1, list))
-  s  = precision_model(k, 10, diag(1, m))
+  mu = delabel(apply(location_model(k, rep(0, m), diag(0.05, m)), MARGIN = 1, list))
+  s  = precision_model(k, 2, diag(1, m))
   list(c, mu, s)
   }
 
@@ -41,3 +41,9 @@ safe_rmvnorm = function(c, m, s) {
   else rmvnorm(c, m, solve(s))
   }
 
+# for vis, apply this and then
+# ggplot(foo, aes(x, y, colour = factor(cluster))) + geom_point(alpha = 0.2)
+previs = function(d) {
+  for (j in seq_along(d)) { d[[j]]$cluster = j }
+  do.call(rbind, d)
+  }
