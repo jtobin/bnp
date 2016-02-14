@@ -17,7 +17,9 @@ parameter_model = function(m, k, n) {
   }
 
 data_model = function(config) {
-  mapply(safe_rmvnorm, config[[1]], config[[2]], config[[3]])
+  raw    = mapply(safe_rmvnorm, config[[1]], config[[2]], config[[3]])
+  frame  = function(m) { data.frame(x = m[,1], y = m[,2]) }
+  lapply(raw, frame)
   }
 
 model = function(m, k, n) {
