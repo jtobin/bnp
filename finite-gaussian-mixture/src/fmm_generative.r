@@ -1,6 +1,7 @@
 set.seed(42)
 
 require(gtools)
+require(magrittr)
 
 mixing_model    = function(k, a) drop(rdirichlet(1, (rep(a, k))))
 label_model     = function(n, p) drop(rmultinom(1, size = n, prob = p))
@@ -16,12 +17,9 @@ parameter_model = function(k, n) {
   }
 
 data_model = function(config) {
-  sampler = function(y, m, s) rnorm(y, m, 1 / s) # FIXME this may not do what i expect
+  sampler = function(y, m, s) rnorm(y, m, 1 / s)
   mapply(sampler, config[[1]], config[[2]], config[[3]])
   }
 
-model = function(k, n) {
-  config = parameter_model(k, n)
-  data_model(config)
-  }
+model = function(k, n) parameter_model(k, n) %>% data_model
 

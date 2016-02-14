@@ -1,6 +1,7 @@
 set.seed(42)
 
 require(gtools)
+require(magrittr)
 require(mvtnorm)
 
 mixing_model    = function(k, a) drop(rdirichlet(1, (rep(a, k))))
@@ -22,10 +23,7 @@ data_model = function(config) {
   lapply(raw, frame)
   }
 
-model = function(m, k, n) {
-  config = parameter_model(m, k, n)
-  data_model(config)
-  }
+model = function(m, k, n) parameter_model(m, k, n) %>% data_model
 
 # utilities
 
@@ -41,8 +39,6 @@ safe_rmvnorm = function(c, m, s) {
   else rmvnorm(c, m, solve(s))
   }
 
-# for vis, apply this and then
-# ggplot(foo, aes(x, y, colour = factor(cluster))) + geom_point(alpha = 0.2)
 previs = function(d) {
   for (j in seq_along(d)) { d[[j]]$cluster = j }
   do.call(rbind, d)
