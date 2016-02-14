@@ -19,7 +19,7 @@ parameter_model = function(m, k, n) {
 
 data_model = function(config) {
   raw    = mapply(safe_rmvnorm, config[[1]], config[[2]], config[[3]])
-  frame  = function(m) { data.frame(x = m[,1], y = m[,2]) }
+  frame  = function(m) data.frame(x = m[,1], y = m[,2])
   lapply(raw, frame)
   }
 
@@ -32,7 +32,7 @@ rinvwishart = function(n, v, S) {
   delabel(apply(wishes, MARGIN = 3, function(x) list(solve(x))))
   }
 
-delabel = function(x) { lapply(x, "[[", 1) }
+delabel = function(x) lapply(x, "[[", 1)
 
 safe_rmvnorm = function(c, m, s) {
   if (c <= 0) return(numeric(0))

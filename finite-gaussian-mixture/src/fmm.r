@@ -2,59 +2,57 @@ set.seed(42)
 
 require(dplyr)
 require(gtools)
+require(magrittr)
 
-#  basic finite gaussian mixture model
-#
-#  p               ~ symmetric-dirichlet(a)
-#  c | p           ~ multinomial(p)
-#  mu | c          ~ gaussian(l, 1 / r)
-#  s  | c          ~ gamma(b, 1 / w)
-#  y | p, c, mu, s ~ <p, normal(mu, 1 / s)>
+mixing_model    = function(k, a) drop(rdirichlet(1, (rep(a, k))))
+label_model     = function(n, p) drop(rmultinom(1, size = n, prob = p))
+location_model  = function(k, l, r) rnorm(k, l, 1 / r)
+precision_model = function(k, b, w) rgamma(k, b, 1 / w)
 
-# mixing probabilities
-
-rp_model = function(k, a) drop(rdirichlet(1, (rep(a, k))))
-
-rp_conditional = function(n, a0) {
-    k  = length(n)
-    a1 = sapply(n, function(x) { x + a0 / k })
-    drop(rdirichlet(1, a1))
+parameter_model = function(k, n) {
+  p  = mixing_model(k, 1)
+  c  = label_model(n, p)
+  mu = location_model(k, 0, 0.1)
+  s  = precision_model(k, 1, 1)
+  data.frame(c = c, mu = mu, s = s)
   }
 
-# cluster labels
+data_model = function(config) {
+  sampler = function(row) rnorm(row[1], row[2], 1 / row[3])
+  apply(config, MARGIN = 1, sampler)
+  }
 
-rc_model = function(n, p) drop(rmultinom(1, size = n, prob = p))
+model = function(k, n) parameter_model(k, n) %>% data_model
 
-# FIXME too easy to generate NaN probabilities when precisions are too large
-#       may not be correct at all.  perplexing.
-rc_conditional = function(y, p0, mu, s) {
+# conditional models
+
+conditional_mixing_model = function(n, a0) {
+  k  = length(n)
+  a1 = sapply(n, function(x) { x + a0 / k })
+  drop(rdirichlet(1, a1))
+  }
+
+# FIXME correctness dubious; easy to get NaN probabilities
+conditional_label_model = function(y, p0, mu, s) {
   k        = length(p0)
   reducer  = function(p, m, prec) { p * dnorm(y, m, 1 / prec) }
   elements = mapply(reducer, p, m, s)
   p1       = elements / sum(elements)
-
   sample(1:k, size = 1, prob = p1)
   }
 
-# cluster locations
-
-rmu_model = function(k, l, r) rnorm(k, l, 1 / r)
-
-rmu_conditional = function(y, s, l, r) {
+# FIXME correctness dubious; seems incredibly precise no matter what s is
+conditional_location_model = function(y, s, l, r) {
   k    = length(s)
-  c    = sapply(y, length)
-  ybar = sapply(y, safe_mean)
-  m    = (ybar * c * s + l * r) / (c * s + r)
-  v    = 1 / (c * s + r)
-  rnorm(k, m, v)
+  n    = sapply(y, length)
+  yt   = sapply(y, sum)
+  m    = (yt * s + l * r) / (n * s + r)
+  v    = 1 / (n * s + r)
+  mapply(rnorm, 1, m, v)
   }
 
-# cluster precisions
-
-rs_model = function(k, b, w) rgamma(k, b, 1 / w)
-
-# FIXME seems to be generating enormous precisions
-rs_conditional = function(y, mu, b, w) {
+# FIXME correctness dubious; precisions are very large
+conditional_precision_model = function(y, mu, b, w) {
   k = length(y)
   c = sapply(y, length)
 
@@ -69,31 +67,7 @@ rs_conditional = function(y, mu, b, w) {
   mapply(reducer, a, bet)
   }
 
-# parameter model (prior)
-
-rconfig_model = function(k, n) {
-  p  = rp_model(k, 1)
-  c  = rc_model(n, p)
-  mu = rmu_model(k, 0, 0.1)
-  s  = rs_model(k, 1, 1)
-  data.frame(c = c, mu = mu, s = s)
-  }
-
-# data model (likelihood)
-
-ry_model = function(config) {
-  sampler = function(row) rnorm(row[1], row[2], 1 / row[3])
-  apply(config, MARGIN = 1, sampler)
-  }
-
-# model
-
-rmodel = function(k, n) {
-  config = rconfig_model(k, n)
-  ry_model(config)
-  }
-
-rmodel_conditional = function(n, y) {
+inverse_model = function(n, y) {
   k = 3
   a = 1
   l = 0
@@ -104,16 +78,16 @@ rmodel_conditional = function(n, y) {
   raw = unlist(y)
 
   kernel = function(p0, mu0, s0) {
-    z = sapply(raw, function(x) rc_conditional(x, p0, mu0, s0)) # FIXME slow
+    z = sapply(raw, function(x) conditional_label_model(x, p0, mu0, s0)) # FIXME slow
     labelled = data.frame(label = z, y = raw)
     id_query = function(c) filter(labelled, label == c)$y
 
     clustered = sapply(1:k, id_query)
     counts    = sapply(clustered, length)
 
-    p1  = rp_conditional(counts, a)
-    mu1 = rmu_conditional(clustered, s0, l, r)
-    s1  = rs_conditional(clustered, mu1, b, w)
+    p1  = conditional_mixing_model(counts, a)
+    mu1 = conditional_location_model(clustered, s0, l, r)
+    s1  = conditional_precision_model(clustered, mu1, b, w)
     list(p = p1, mu = mu1, s = s1)
     }
 
@@ -122,6 +96,7 @@ rmodel_conditional = function(n, y) {
         return(acc)
       } else {
           result = kernel(p0, mu0, s0)
+          # FIXME mapply(rbind, acc, result) ?
           acc$p  = rbind(acc$p, result$p)
           acc$mu = rbind(acc$mu, result$mu)
           acc$s  = rbind(acc$s, result$s)
@@ -129,9 +104,9 @@ rmodel_conditional = function(n, y) {
       }
     }
 
-  p0   = rp_model(k, a)
-  mu0  = rmu_model(k, l, r)
-  s0   = rs_model(k, b, w)
+  p0   = mixing_model(k, a)
+  mu0  = location_model(k, l, r)
+  s0   = precision_model(k, b, w)
   init = list(p = p0, mu = mu0, s = s0)
 
   gibbs(n, init, p0, mu0, s0)
@@ -163,11 +138,11 @@ test_data = list(
 # k = length(y)
 # l = 0
 # r = 0.1
-# mu = rmu_model(k, l, r)
+# mu = location_model(k, l, r)
 # w = 1
 # b = 1
-# s = rs_model(k, b, w)
-# p = rp_model(k, 1)
+# s = precision_model(k, b, w)
+# p = mixing_model(k, 1)
 # c = drop(rmultinom(1, 1, prob = p))
 # p0 = p
 # mu0 = mu
