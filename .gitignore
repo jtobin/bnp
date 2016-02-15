@@ -2,3 +2,8 @@ reference
 data
 *swp
 debug
+*aux
+*log
+*pdf
+deprecated
+.DS_Store
