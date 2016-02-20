@@ -1,8 +1,10 @@
 
 ibp = function(n, a) {
+
   dishes = max(1, rpois(1, a))
   diners = data.frame(dish = seq(dishes), diners = rep(1, dishes))
   buffet = list(buffet = diners, choices = list(seq(dishes)))
+
   for (j in seq(n - 1)) {
       buffet = arrival(buffet, a)
     }
@@ -37,7 +39,7 @@ arrival = function(b, a) {
   }
 
 ibp_matrix = function(buffet) {
-  dishes = Reduce(max, buffet$choices)
+  dishes = do.call(max, buffet$choices)
   index  = function(j) { as.numeric(seq(dishes) %in% j) }
   rows   = lapply(buffet$choices, index)
 
