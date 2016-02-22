@@ -38,8 +38,3 @@ safe_rmvnorm = function(c, m, s) {
   if (c <= 0) return(numeric(0))
   else rmvnorm(c, m, solve(s))
   }
-
-previs = function(d) {
-  for (j in seq_along(d)) { d[[j]]$cluster = j }
-  do.call(rbind, d)
-  }
