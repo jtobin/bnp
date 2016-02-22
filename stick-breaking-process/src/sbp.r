@@ -3,7 +3,7 @@ sbp = function(n, a) {
   for (j in seq(n)) {
     bundle = snap(bundle[[1]], bundle[[2]], a)
     }
-  bundle[[2]]
+  c(bundle[[2]], 1 - sum(bundle[[2]]))
   }
 
 snap = function(acc, bun, a) {
