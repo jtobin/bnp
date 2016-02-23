@@ -2,7 +2,7 @@ set.seed(42)
 
 require(dplyr)
 require(gtools)
-require(reshape2)
+require(reshape2) # FIXME move to simulation module
 
 source('fmm_generative.r')
 
@@ -116,4 +116,30 @@ conditional_precision_model = function(y, z, m, b, w) {
   mapply(function(a, b) rgamma(1, a, b), a, bet)
   }
 
+# FIXME errors
+inverse_model = function(n, k, y, a, l, r, b, w) {
+  kernel = function(p, m, s) {
+    z  = conditional_label_model(y, p, m, s)
+    list(
+        p  = conditional_mixing_model(y, k, z, a)
+      , mu = conditional_location_model(y, z, s, l, r)
+      , s  = conditional_precision_model(y, z, m, b, w)
+      )
+    }
+
+  p0 = mixing_model(k, a)
+  m0 = location_model(k, l, r)
+  s0 = precision_model(k, b, w)
+
+  params = list(p = p0, m = m0, s = s0)
+  acc    = list(p = p0, m = m0, s = s0)
+  for (j in seq(n)) {
+      params = kernel(params$p, params$m, params$s)
+      acc$p  = rbind(acc$p, params$p)
+      acc$m  = rbind(acc$m, params$m)
+      acc$s  = rbind(acc$s, params$s)
+    }
+
+  acc
+  }
 
