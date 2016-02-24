@@ -3,6 +3,7 @@ DP_SRC  = paste(BNP_DIR, "dirichlet-process/src/dp.r", sep = "/")
 
 source(DP_SRC)
 
+# FIXME (jtobin): this may not be correct
 hdp = function(n, a, h, n1, n2, a1, a2) {
   g0 = dp(n, a, h)
   h0 = function() { sample(g0[[1]], size = 1) }
