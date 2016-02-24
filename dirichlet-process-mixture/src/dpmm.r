@@ -1,5 +1,3 @@
-set.seed(42)
-
 BNP_DIR = "/Users/jtobin/projects/bnp"
 SBP_SRC = paste(BNP_DIR, "stick-breaking-process/src/sbp.r", sep = "/")
 

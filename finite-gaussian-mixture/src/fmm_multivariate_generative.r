@@ -1,5 +1,3 @@
-set.seed(42)
-
 require(gtools)
 require(magrittr)
 require(mvtnorm)
