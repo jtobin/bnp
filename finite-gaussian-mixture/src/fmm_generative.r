@@ -3,7 +3,7 @@ require(magrittr)
 
 mixing_model    = function(k, a) drop(rdirichlet(1, (rep(a, k))))
 label_model     = function(n, p) drop(rmultinom(1, size = n, prob = p))
-location_model  = function(k, l, r) rnorm(k, l, 1 / r)
+location_model  = function(k, l, r) rnorm(k, l, sqrt(1 / r))
 precision_model = function(k, b, w) rgamma(k, b, 1 / w)
 
 parameter_model = function(k, n) {
