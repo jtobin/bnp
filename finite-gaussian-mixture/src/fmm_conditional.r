@@ -113,7 +113,8 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     p1 = conditional_mixing_model(y, k, z, a)
     m1 = conditional_location_model(y, z, s0, l, r)
     s1 = conditional_precision_model(y, z, m1, b, w)
-    list(p = p1, m = m1, s = s1, l = lmodel(y, z, p1, m1, s1))
+    l  = lmodel(y, z, p1, m1, s1)
+    list(p = p1, m = m1, s = s1, z = z, l = l)
     }
 
   p0     = mixing_model(k, a)
@@ -127,6 +128,7 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
       acc$p  = rbind(acc$p, params$p)
       acc$m  = rbind(acc$m, params$m)
       acc$s  = rbind(acc$s, params$s)
+      acc$z  = rbind(acc$z, params$z)
       acc$l  = c(acc$l, params$l)
     }
   acc

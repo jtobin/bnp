@@ -49,3 +49,19 @@ ps = ggplot(ds, aes(x = seq_along(value), y = value, colour = variable)) +
 pl = ggplot(dl, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
 
+early = data.frame(value = d$value, variable = params$z[1,])
+mid   = data.frame(value = d$value, variable = params$z[round(config$n / 2),])
+late  = data.frame(value = d$value, variable = params$z[config$n - 1,])
+
+p_early =
+  ggplot(early, aes(value, colour = factor(variable), fill = factor(variable))) +
+    geom_density(alpha = 0.5)
+
+p_mid =
+  ggplot(mid, aes(value, colour = factor(variable), fill = factor(variable))) +
+    geom_density(alpha = 0.5)
+
+p_late =
+  ggplot(late, aes(value, colour = factor(variable), fill = factor(variable))) +
+    geom_density(alpha = 0.5)
+
