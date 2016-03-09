@@ -12,12 +12,20 @@ parameter_model = function(k, n) {
   mu = location_model(k, 0, 0.1)
   s  = precision_model(k, 1, 1)
   list(c, mu, s)
-  }
+}
 
 data_model = function(config) {
   sampler = function(y, m, s) rnorm(y, m, 1 / s)
   mapply(sampler, config[[1]], config[[2]], config[[3]])
-  }
+}
 
 model = function(k, n) parameter_model(k, n) %>% data_model
+
+lmodel = function(y, z, p, m, t) {
+  clustered = data.frame(value = y, L1 = z)
+  cluster   = clustered$L1
+  score     = log(p[cluster]) +
+    dnorm(clustered$value, m[cluster], sqrt(1 / p[cluster]), log = T)
+  sum(score)
+}
 

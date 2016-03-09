@@ -71,11 +71,9 @@ conditional_location_model = function(y, z, s, l, r) {
       }
     })
 
-  # FIXME (jtobin): check these against tim hopper's
   m  = (yt * s + l * r) / (n * s + r)
   v  = 1 / (n * s + r)
 
-  # FIXME (jtobin): check this
   mapply(rnorm, 1, m, v)
   }
 
@@ -110,12 +108,12 @@ conditional_precision_model = function(y, z, m, b, w) {
   }
 
 inverse_model = function(n, k, y, a, l, r, b, w) {
-  kernel = function(p0, m0, s0) {
+  gibbs = function(p0, m0, s0) {
     z  = conditional_label_model(y, p0, m0, s0)
     p1 = conditional_mixing_model(y, k, z, a)
     m1 = conditional_location_model(y, z, s0, l, r)
     s1 = conditional_precision_model(y, z, m1, b, w)
-    list(p = p1, m = m1, s = s1)
+    list(p = p1, m = m1, s = s1, l = lmodel(y, z, p1, m1, s1))
     }
 
   p0     = mixing_model(k, a)
@@ -125,10 +123,11 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
 
   acc = params
   for (j in seq(n - 1)) {
-      params = kernel(params$p, params$m, params$s)
+      params = gibbs(params$p, params$m, params$s)
       acc$p  = rbind(acc$p, params$p)
       acc$m  = rbind(acc$m, params$m)
       acc$s  = rbind(acc$s, params$s)
+      acc$l  = c(acc$l, params$l)
     }
   acc
   }
