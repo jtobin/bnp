@@ -12,7 +12,7 @@ config = list(
   , r = 0.1
   , b = 1
   , w = 1
-  , n = 500
+  , n = 1000
   )
 
 origin = list(
@@ -32,6 +32,7 @@ params = inverse_model(
 dp = melt(as.data.frame(params$p))
 dm = melt(as.data.frame(params$m))
 ds = melt(as.data.frame(params$s))
+dl = melt(as.data.frame(params$l))
 
 py = ggplot(d, aes(value, colour = factor(L1), fill = factor(L1))) +
        geom_density(alpha = 0.5)
@@ -43,5 +44,8 @@ pm = ggplot(dm, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
 
 ps = ggplot(ds, aes(x = seq_along(value), y = value, colour = variable)) +
+       geom_line()
+
+pl = ggplot(dl, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
 
