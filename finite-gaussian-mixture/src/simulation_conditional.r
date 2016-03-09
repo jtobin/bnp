@@ -43,7 +43,7 @@ pp = ggplot(dp, aes(x = seq_along(value), y = value, colour = variable)) +
 pm = ggplot(dm, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
 
-ps = ggplot(ds, aes(x = seq_along(value), y = value, colour = variable)) +
+ps = ggplot(ds, aes(x = seq_along(value), y = log(value), colour = variable)) +
        geom_line()
 
 pl = ggplot(dl, aes(x = seq_along(value), y = value, colour = variable)) +
