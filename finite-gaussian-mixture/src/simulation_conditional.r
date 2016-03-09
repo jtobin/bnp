@@ -33,6 +33,9 @@ dp = melt(as.data.frame(params$p))
 dm = melt(as.data.frame(params$m))
 ds = melt(as.data.frame(params$s))
 
+py = ggplot(d, aes(value, colour = factor(L1), fill = factor(L1))) +
+       geom_density(alpha = 0.5)
+
 pp = ggplot(dp, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
 
