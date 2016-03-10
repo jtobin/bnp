@@ -74,7 +74,7 @@ conditional_location_model = function(y, z, s, l, r) {
   m  = (yt * s + l * r) / (n * s + r)
   v  = 1 / (n * s + r)
 
-  mapply(rnorm, 1, m, v)
+  mapply(rnorm, 1, m, sqrt(v))
   }
 
 conditional_precision_model = function(y, z, m, b, w) {
