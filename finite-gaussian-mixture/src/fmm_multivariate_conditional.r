@@ -1,38 +1,8 @@
-# FIXME code can be improved via mapply(., simplify = F)
 require(dplyr)
 require(gtools)
 require(mvtnorm)
-require(reshape2) # FIXME move to sim module
 
 source('fmm_multivariate_generative.r')
-
-# FIXME (jtobin): move to simulation module
-set.seed(9909)
-
-# FIXME (jtobin): move to simulation module
-dimension = 2
-
-# FIXME (jtobin): move to simulation module
-config = list(
-    k = 3
-  , m = dimension
-  , a = 1
-  , l = rep(0, dimension)
-  , r = diag(0.05, dimension)
-  , b = 2
-  , w = diag(1, dimension)
-  , n = 1000
-  )
-
-# FIXME (jtobin): move to simulation module
-origin = list(
-    p = mixing_model(config$k, config$a)
-  , m = location_model(config$k, config$l, config$r)
-  , s = precision_model(config$k, config$b, config$w)
-  )
-
-# FIXME (jtobin): move to simulation module
-d = melt(model(config$m, config$k, config$n), id.vars = c('x', 'y'))
 
 conditional_mixing_model = function(y, k, z, a) {
   labelled      = cbind(y, L1 = z)
@@ -124,6 +94,7 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     p1 = conditional_mixing_model(y, k, z, a)
     m1 = conditional_location_model(y, z, s0, l, r)
     s1 = conditional_precision_model(y, z, m1, b, w)
+    # FIXME (jtobin): log scores
     # l  = lmodel(y, z, p1, m1, s1)
     list(p = p1, m = m1, s = s1, z = z) # l = l)
     }
@@ -143,10 +114,11 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
 
       acc$p  = rbind(acc$p, params$p)
       acc$m  = mapply(rbind, acc$m, params$m, SIMPLIFY = F)
-      # NOTE (jtobin): not logging intermediate covariances
-      #                might be desirable to log some reduced ellipse dims tho
+      # FIXME (jtobin): not logging intermediate covariances
+      #                 might be desirable to log some reduced ellipse dims
       acc$s  = params$s
       acc$z  = rbind(acc$z, params$z)
+      # FIXME (jtobin): log scores
       # acc$l  = c(acc$l, params$l)
     }
   acc
