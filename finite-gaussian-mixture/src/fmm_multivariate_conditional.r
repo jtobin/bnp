@@ -1,3 +1,4 @@
+# FIXME code can be improved via mapply(., simplify = F)
 require(dplyr)
 require(gtools)
 require(mvtnorm)
@@ -6,7 +7,7 @@ require(reshape2) # FIXME move to sim module
 source('fmm_multivariate_generative.r')
 
 # FIXME (jtobin): move to simulation module
-set.seed(42)
+set.seed(9909)
 
 # FIXME (jtobin): move to simulation module
 dimension = 2
@@ -33,7 +34,6 @@ origin = list(
 # FIXME (jtobin): move to simulation module
 d = melt(model(config$m, config$k, config$n), id.vars = c('x', 'y'))
 
-# y is a nxm matrix, z is a nx1 vector
 conditional_mixing_model = function(y, k, z, a) {
   labelled      = cbind(y, L1 = z)
   counts        = summarise(group_by(labelled, L1), count = n())
@@ -74,50 +74,28 @@ conditional_label_model = function(y, p, m, s) {
     , function(row) { sample(seq_along(m), size = 1, prob = row) }
     )
   unname(clusters)
-  }
+}
 
 conditional_location_model = function(y, z, s, l, r) {
   labelled = cbind(y, L1 = z)
-
-  cluster = function(d, j) {
+  cluster  = function(d, j) {
     vals = d[which(d$L1 == j), !(names(d) %in% 'L1')]
   }
 
   clustered = lapply(seq_along(s), function(j) { cluster(labelled, j) })
-  n  = lapply(clustered, nrow)
-  yt = lapply(clustered, function(foo) { apply(foo, MARGIN = 2, sum) })
-
-  # FIXME (jtobin): move out of function
-  listcols = function(mat) {
-    lapply(seq(ncol(mat)), function(j) t(matrix(mat[, j])))
-  }
-
-  # FIXME (jtobin): reduce duplication
-  listcolsSquare = function(mat) {
-    lapply(
-        seq(ncol(mat))
-      , function(j) t(matrix(mat[, j], nrow = sqrt(nrow(mat))))
-      )
-  }
-
-  muls = function(a, b) {
-    v = mapply('*', a, b)
-    listcolsSquare(v)
-  }
-
-  num0 = listcols(mapply('%*%', yt, s))
-  num1 = l %*% r
-  num  = lapply(num0, function(z) z + num1)
-  den  = lapply(muls(n, s), function(z) z + r)
+  n    = lapply(clustered, nrow)
+  yt   = lapply(clustered, function(j) { apply(j, MARGIN = 2, sum) })
+  num0 = mapply('%*%', yt, s, SIMPLIFY = F)
+  num  = lapply(num0, function(z) { z + (l %*% r) })
+  den0 = mapply('*', n, s, SIMPLIFY = F)
+  den  = lapply(den0, function(z) z + r)
 
   v = lapply(den, solve)
-  m = listcols(mapply('%*%', num, v))
-
-  listcols(mapply(rmvnorm, 1, m, v))
-  }
+  m = mapply('%*%', num, v, SIMPLIFY = F)
+  mapply(rmvnorm, 1, m, v, SIMPLIFY = F)
+}
 
 conditional_precision_model = function(y, z, m, b, w) {
-
   labelled = cbind(y, L1 = z)
   cluster  = function(d, j) {
     vals = d[which(d$L1 == j), !(names(d) %in% 'L1')]
@@ -126,31 +104,20 @@ conditional_precision_model = function(y, z, m, b, w) {
   clustered = lapply(seq_along(m), function(j) { cluster(labelled, j) })
   yt = lapply(clustered, function(foo) { apply(foo, MARGIN = 2, sum) })
 
-  centered = list()
-  for (j in seq_along(m)) {
-    centered[[j]] = clustered[[j]] - m[[j]]
+  center = function(i, j) {
+    if (nrow(i) == 0) { as.matrix(i) } else { as.matrix(i - j) }
   }
 
-  ss = lapply(centered, function(x) t(as.matrix(x)) %*% as.matrix(x))
-  n  = lapply(clustered, nrow)
+  centered = mapply(center, clustered, m, SIMPLIFY = F)
+  ss       = lapply(centered, function(x) t(x) %*% x)
+  n        = lapply(clustered, nrow)
+  a        = lapply(n, function(j) j + b)
+  bet0     = lapply(ss, function(j) { (j + w * b) })
+  bet      = mapply('/', bet0, a, SIMPLIFY = F)
 
-  # FIXME reduce duplication
-  listcolsSquare = function(mat) {
-    lapply(
-        seq(ncol(mat))
-      , function(j) t(matrix(mat[, j], nrow = sqrt(nrow(mat))))
-      )
-  }
+  mapply(function(i, j) drop(rWishart(1, i, j)), a, bet, SIMPLIFY = F)
+}
 
-  a    = lapply(n, function(j) j + b)
-  bet0 = lapply(ss, function(j) { (j + w * b) })
-  bet1 = mapply('/', bet0, a)
-  bet  = listcolsSquare(bet1)
-
-  listcolsSquare(mapply(function(a, b) rWishart(1, a, b), a, bet))
-  }
-
-# FIXME (jtobin): not correct
 inverse_model = function(n, k, y, a, l, r, b, w) {
   gibbs = function(p0, m0, s0) {
     z  = conditional_label_model(y, p0, m0, s0)
@@ -164,14 +131,21 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
   p0     = mixing_model(k, a)
   m0     = location_model(k, l, r)
   s0     = precision_model(k, b, w)
-  params = list(p = p0, m = m0, s = s0)
+  params = list(
+      p = p0
+    , m = lapply(m0, function(j) { matrix(j, ncol = length(j)) })
+    , s = s0
+    )
 
   acc = params
   for (j in seq(n - 1)) {
       params = gibbs(params$p, params$m, params$s)
+
       acc$p  = rbind(acc$p, params$p)
-      acc$m  = rbind(acc$m, params$m)
-      acc$s  = rbind(acc$s, params$s)
+      acc$m  = mapply(rbind, acc$m, params$m, SIMPLIFY = F)
+      # NOTE (jtobin): not logging intermediate covariances
+      #                might be desirable to log some reduced ellipse dims tho
+      acc$s  = params$s
       acc$z  = rbind(acc$z, params$z)
       # acc$l  = c(acc$l, params$l)
     }
