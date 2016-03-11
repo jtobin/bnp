@@ -21,11 +21,15 @@ data_model = function(config) {
 
 model = function(k, n) parameter_model(k, n) %>% data_model
 
-lmodel = function(y, z, p, m, t) {
-  clustered = data.frame(value = y, L1 = z)
-  cluster   = clustered$L1
-  score     = log(p[cluster]) +
-    dnorm(clustered$value, m[cluster], sqrt(1 / p[cluster]), log = T)
-  sum(score)
+lmodel = function(y, p, m, s) {
+  score      = function(pr, mu, prec) { pr * dnorm(y, mu, sqrt(1 / prec)) }
+  by_cluster = mapply(score, p, m, s)
+  totalled   = apply(by_cluster, MARGIN = 1, sum)
+
+  # NOTE (jtobin): adjusted for numerical stability
+  small    = 1.379783e-316
+  adjusted = totalled
+  adjusted[which(adjusted == 0)] = small
+  sum(log(adjusted))
 }
 

@@ -51,8 +51,8 @@ pm = ggplot(dm, aes(x = seq_along(value), y = value, colour = variable)) +
 ps = ggplot(ds, aes(x = seq_along(value), y = log(value), colour = variable)) +
        geom_line()
 
-pl = ggplot(dl, aes(x = seq_along(value), y = value, colour = variable)) +
-       geom_line()
+pl = ggplot(dl, aes(x = seq_along(value), y = value)) +
+       geom_line(colour = 'darkblue')
 
 early = data.frame(value = d$value, variable = params$z[1,])
 mid   = data.frame(value = d$value, variable = params$z[round(config$n / 2),])

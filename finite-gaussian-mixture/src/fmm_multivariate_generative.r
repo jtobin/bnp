@@ -32,12 +32,15 @@ data_model = function(config) {
 
 model = function(m, k, n) parameter_model(m, k, n) %>% data_model
 
-# FIXME (jtobin): checkme
-lmodel = function(y, z, p, m, t) {
+# FIXME (jtobin): checkme, not correct
+lmodel = function(y, z, p, m, s) {
+
   clustered = cbind(y, L1 = z)
   cluster   = clustered$L1
+
   score     = log(p[cluster]) +
-    dmvnorm(clustered$value, m[cluster], solve(p[cluster]), log = T)
+    dmvnorm(clustered$value, m[cluster], solve(s[cluster]), log = T)
+
   sum(score)
 }
 

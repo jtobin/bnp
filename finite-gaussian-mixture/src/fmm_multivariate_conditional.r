@@ -88,15 +88,15 @@ conditional_precision_model = function(y, z, m, b, w) {
   mapply(function(i, j) drop(rWishart(1, i, j)), a, bet, SIMPLIFY = F)
 }
 
+# FIXME dubious
 inverse_model = function(n, k, y, a, l, r, b, w) {
   gibbs = function(p0, m0, s0) {
     z  = conditional_label_model(y, p0, m0, s0)
     p1 = conditional_mixing_model(y, k, z, a)
     m1 = conditional_location_model(y, z, s0, l, r)
     s1 = conditional_precision_model(y, z, m1, b, w)
-    # FIXME (jtobin): log scores
-    # l  = lmodel(y, z, p1, m1, s1)
-    list(p = p1, m = m1, s = s1, z = z) # l = l)
+    l  = lmodel(y, z, p1, m1, s1)
+    list(p = p1, m = m1, s = s1, z = z, l = l)
     }
 
   p0     = mixing_model(k, a)
@@ -118,8 +118,7 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
       #                 might be desirable to log some reduced ellipse dims
       acc$s  = params$s
       acc$z  = rbind(acc$z, params$z)
-      # FIXME (jtobin): log scores
-      # acc$l  = c(acc$l, params$l)
+      acc$l  = c(acc$l, params$l)
     }
   acc
   }

@@ -1,4 +1,4 @@
-set.seed(990909)
+set.seed(222)
 
 require(ggplot2)
 require(gridExtra)
@@ -35,4 +35,14 @@ params = inverse_model(
   , config$l, config$r
   , config$b, config$w
   )
+
+
+m_ts_plot = function(j) {
+  melted = as.data.frame(j, id.vars = c('V1', 'V2'))
+  ggplot(
+      melted
+    , aes(x = V1, y = V2, alpha = seq_along(V1), colour = seq_along(V1))) +
+    geom_line() + xlim(-2, 2) + ylim(-10, 10)
+}
+
 
