@@ -22,8 +22,6 @@ origin = list(
   , s = precision_model(config$k, config$b, config$w)
   )
 
-# d = melt(model(config$k, config$n))
-# check with different-probability clusters as well
 d = data.frame(
   value = c(rnorm(250, -3, 0.25), rnorm(500, 0, 0.25), rnorm(250, 3, 0.25)))
 
