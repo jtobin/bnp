@@ -13,7 +13,7 @@ config = list(
   , r = 0.01
   , b = 1
   , w = 1
-  , n = 1000
+  , n = 500
   )
 
 origin = list(
@@ -22,7 +22,10 @@ origin = list(
   , s = precision_model(config$k, config$b, config$w)
   )
 
-d = melt(model(config$k, config$n))
+# d = melt(model(config$k, config$n))
+# check with different-probability clusters as well
+d = data.frame(
+  value = c(rnorm(250, -3, 0.25), rnorm(500, 0, 0.25), rnorm(250, 3, 0.25)))
 
 set.seed(990909)
 
@@ -38,9 +41,6 @@ ds = melt(as.data.frame(params$s))
 dl = melt(as.data.frame(params$l))
 
 py = ggplot(d, aes(value)) + geom_histogram(alpha = 0.5, fill = 'darkblue')
-
-py_true = ggplot(d, aes(value, colour = factor(L1), fill = factor(L1))) +
-            geom_histogram(alpha = 0.5)
 
 pp = ggplot(dp, aes(x = seq_along(value), y = value, colour = variable)) +
        geom_line()
@@ -69,8 +69,6 @@ p_mid =
 p_late =
   ggplot(late, aes(value, colour = factor(variable), fill = factor(variable))) +
     geom_histogram(alpha = 0.5)
-
-true_plots     = grid.arrange(py, py_true, nrow = 2)
 
 chain_plots    = grid.arrange(py, pp, pm, ps, nrow = 2, ncol = 2)
 
