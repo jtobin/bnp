@@ -25,6 +25,7 @@ origin = list(
   , s = precision_model(config$k, config$b, config$w)
   )
 
+# FIXME generate a known/non-pathological configuration first, to test
 d = melt(model(config$m, config$k, config$n), id.vars = c('x', 'y'))
 
 set.seed(990909)

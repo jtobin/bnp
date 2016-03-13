@@ -16,21 +16,19 @@ location_model  = function(k, l, r) {
 
 precision_model = function(k, b, w) rinvwishart(k, b, solve(w))
 
-parameter_model = function(m, k, n) {
+parameter_model = function(m, k, b, n) {
   p  = mixing_model(k, 1)
   c  = label_model(n, p)
   mu = location_model(k, rep(0, m), diag(0.05, m))
-  s  = precision_model(k, 2, diag(1, m))
-  list(c, mu, s)
-  }
+  s  = precision_model(k, b, diag(1, m))
+  list(n = c, m = mu, s = s)
+}
 
 data_model = function(config) {
-  raw    = mapply(safe_rmvnorm, config[[1]], config[[2]], config[[3]])
-  frame  = function(m) data.frame(x = m[,1], y = m[,2])
-  lapply(raw, frame)
-  }
+  mapply(safe_rmvnorm, config$n, config$m, config$s)
+}
 
-model = function(m, k, n) parameter_model(m, k, n) %>% data_model
+model = function(m, k, b, n) parameter_model(m, k, b, n) %>% data_model
 
 # FIXME (jtobin): checkme, not correct
 lmodel = function(y, z, p, m, s) {
