@@ -62,9 +62,9 @@ p_late =
   ggplot(late, aes(x, y, value, colour = factor(variable), fill = factor(variable))) +
     geom_point(alpha = 0.5)
 
-mean_convergence_plots = ggplot(dm, aes(x, y)) +
-  geom_point(fill = 'darkblue', colour = 'darkblue', alpha = 0.2) +
-  facet_grid(. ~ L1)
+mean_convergence_plots =
+  ggplot(dm, aes(x, y, colour = factor(L1), fill = factor(L1))) +
+    geom_point(alpha = 0.2) + facet_grid(. ~ L1)
 
 chain_plots = grid.arrange(pp, mean_convergence_plots, nrow = 2)
 
