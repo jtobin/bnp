@@ -1,5 +1,3 @@
-set.seed(222)
-
 require(ggplot2)
 require(gridExtra)
 require(reshape2)
@@ -19,6 +17,8 @@ config = list(
   , n = 1000
   )
 
+set.seed(222)
+
 origin = list(
     p = mixing_model(config$k, config$a)
   , m = location_model(config$k, config$l, config$r)
@@ -26,12 +26,14 @@ origin = list(
   )
 
 # FIXME generate a known/non-pathological configuration first, to test
-d = melt(model(config$m, config$k, config$n), id.vars = c('x', 'y'))
+d  = model(config$k, config$l, config$r, config$b, config$w, config$n)
+dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
+m  = melt(dn, id.vars = c('x', 'y'))
 
 set.seed(990909)
 
 params = inverse_model(
-    config$n, config$k, d[, c('x', 'y')]
+    config$n, config$k, m[, c('x', 'y')]
   , config$a
   , config$l, config$r
   , config$b, config$w

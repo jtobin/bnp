@@ -1,8 +1,10 @@
-require(dplyr)
 require(gtools)
 require(mvtnorm)
 
 source('fmm_multivariate_generative.r')
+
+# NOTE (jtobin): must load dplyr after plyr
+require(dplyr)
 
 conditional_mixing_model = function(y, k, z, a) {
   labelled      = cbind(y, L1 = z)
@@ -20,7 +22,7 @@ conditional_mixing_model = function(y, k, z, a) {
 }
 
 conditional_label_model = function(y, p, m, s) {
-  scorer     = function(mix, mu, prec) {
+  scorer = function(mix, mu, prec) {
     exp(log(mix) + dmvnorm(y, mu, solve(prec), log = T))
   }
 
@@ -46,16 +48,45 @@ conditional_label_model = function(y, p, m, s) {
   unname(clusters)
 }
 
-conditional_location_model = function(y, z, s, l, r) {
-  labelled = cbind(y, L1 = z)
-  cluster  = function(d, j) {
-    vals = d[which(d$L1 == j), !(names(d) %in% 'L1')]
+conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
+  labelled  = data.frame(y, L1 = z)
+  clustered = lapply(seq(k),
+    function(j) {
+      vals = labelled[which(labelled$L1 == j), !(names(labelled) %in% 'L1')]
+      as.matrix(vals)
+    })
+
+  # FIXME (jtobin): NaN for empty clusters; need to handle this?
+  ybar     = lapply(clustered, colMeans)
+  n        = lapply(clustered, nrow)
+  pl       = function(lj, nj, ybarj) { (lj + nj * ybarj) / (1 + nj) }
+  ln       = mapply(pl, list(l), n, ybar, SIMPLIFY = F)
+  centered = mapply('-', clustered, ybar, SIMPLIFY = F)
+  ss       = lapply(centered, function(x) t(x) %*% x)
+
+  pt = function(wj, ssj, nj, ybarj) {
+    wj + ssj + nj / (1 + nj) * ((l - ybarj) %*% t(l - ybarj))
   }
 
-  clustered = lapply(seq_along(s), function(j) { cluster(labelled, j) })
+  tn   = mapply(pt, list(w), ss, n, ybar, SIMPLIFY = F)
+  bn   = lapply(n, function(x) x + b)
+  prec = mapply(function(i, j) drop(rWishart(1, i, j)), bn, tn, SIMPLIFY = F)
+  cov  = mapply(function(i, j) solve((i + 1) * j), n, tn, SIMPLIFY = F)
+  loc  = mapply(rmvnorm, 1, ln, cov, SIMPLIFY = F)
+  list(m = loc, s = prec)
+}
+
+conditional_location_model = function(y, z, s, l, r) {
+  labelled  = data.frame(y, L1 = z)
+  clustered = lapply(seq_along(s),
+    function(j) {
+      labelled[which(labelled$L1 == j), !(names(labelled) %in% 'L1')]
+    })
+
   n    = lapply(clustered, nrow)
   yt   = lapply(clustered, function(j) { apply(j, MARGIN = 2, sum) })
   num0 = mapply('%*%', yt, s, SIMPLIFY = F)
+
   num  = lapply(num0, function(z) { z + (l %*% r) })
   den0 = mapply('*', n, s, SIMPLIFY = F)
   den  = lapply(den0, function(z) z + r)
@@ -88,14 +119,14 @@ conditional_precision_model = function(y, z, m, b, w) {
   mapply(function(i, j) drop(rWishart(1, i, j)), a, bet, SIMPLIFY = F)
 }
 
-# FIXME dubious
 inverse_model = function(n, k, y, a, l, r, b, w) {
   gibbs = function(p0, m0, s0) {
     z  = conditional_label_model(y, p0, m0, s0)
     p1 = conditional_mixing_model(y, k, z, a)
-    m1 = conditional_location_model(y, z, s0, l, r)
-    s1 = conditional_precision_model(y, z, m1, b, w)
-    l  = lmodel(y, z, p1, m1, s1)
+    ps = conditional_cluster_parameters_model(y, k, z, l, r, b, w)
+    m1 = ps$m
+    s1 = ps$s
+    l  = lmodel(y, p1, m1, s1)
     list(p = p1, m = m1, s = s1, z = z, l = l)
     }
 

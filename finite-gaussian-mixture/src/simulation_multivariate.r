@@ -4,7 +4,7 @@ require(scatterplot3d)
 
 source('fmm_multivariate_generative.r')
 
-# 2d
+# 2d example
 
 config = list(
     k = 4
@@ -26,7 +26,7 @@ framed = lapply(d, function(mat) { data.frame(x = mat[,1], y = mat[,2]) })
 melted = melt(framed, id.vars = c('x', 'y'))
 p = ggplot(melted, aes(x, y, colour = factor(L1))) + geom_point(alpha = 0.2)
 
-# 3d
+# 3d example
 
 config_3d = list(
     k = 4
