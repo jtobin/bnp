@@ -106,9 +106,7 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
 
       acc$p  = rbind(acc$p, params$p)
       acc$m  = mapply(rbind, acc$m, params$m, SIMPLIFY = F)
-      # FIXME (jtobin): not logging intermediate covariances
-      # possibly desirable to log eigenvalues
-      acc$s  = params$s
+      acc$s  = c(acc$s, list(params$s))
       acc$z  = rbind(acc$z, params$z)
       acc$l  = c(acc$l, params$l)
     }

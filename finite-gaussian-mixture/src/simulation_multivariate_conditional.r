@@ -41,7 +41,7 @@ dm = melt(lapply(params$m, data.frame), id.vars = c('x', 'y'))
 py = ggplot(m, aes(x, y)) + geom_point()
 
 pp = ggplot(dp, aes(seq_along(value), value, colour = variable)) +
-       geom_line()
+       geom_line() + facet_grid(. ~ variable)
 
 pm = ggplot(dm, aes(x, y, colour = factor(L1), fill = factor(L1))) +
        geom_point(alpha = 0.5)
