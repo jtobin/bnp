@@ -35,12 +35,38 @@ params = inverse_model(
   , config$b, config$w
   )
 
-#m_ts_plot = function(j) {
-#  melted = as.data.frame(j, id.vars = c('V1', 'V2'))
-#  ggplot(
-#      melted
-#    , aes(x = V1, y = V2, alpha = seq_along(V1), colour = seq_along(V1))) +
-#    geom_line() + xlim(-2, 2) + ylim(-10, 10)
-#}
+dp = melt(data.frame(params$p))
+dm = melt(lapply(params$m, data.frame), id.vars = c('x', 'y'))
 
+py = ggplot(m, aes(x, y)) + geom_point()
+
+pp = ggplot(dp, aes(seq_along(value), value, colour = variable)) +
+       geom_line()
+
+pm = ggplot(dm, aes(x, y, colour = factor(L1), fill = factor(L1))) +
+       geom_point(alpha = 0.5)
+
+early = data.frame(x = m$x, y = m$y, variable = params$z[1,])
+mid   = data.frame(x = m$x, y = m$y, variable = params$z[round(config$n / 2),])
+late  = data.frame(x = m$x, y = m$y, variable = params$z[config$n - 1,])
+
+p_early =
+  ggplot(early, aes(x, y, colour = factor(variable), fill = factor(variable))) +
+    geom_point(alpha = 0.5)
+
+p_mid =
+  ggplot(mid, aes(x, y, colour = factor(variable), fill = factor(variable))) +
+    geom_point(alpha = 0.5)
+
+p_late =
+  ggplot(late, aes(x, y, value, colour = factor(variable), fill = factor(variable))) +
+    geom_point(alpha = 0.5)
+
+mean_convergence_plots = ggplot(dm, aes(x, y)) +
+  geom_point(fill = 'darkblue', colour = 'darkblue', alpha = 0.2) +
+  facet_grid(. ~ L1)
+
+chain_plots = grid.arrange(pp, mean_convergence_plots, nrow = 2)
+
+inferred_plots = grid.arrange(py, p_early, p_mid, p_late, nrow = 2, ncol = 2)
 
