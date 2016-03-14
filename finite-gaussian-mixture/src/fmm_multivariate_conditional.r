@@ -56,7 +56,6 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
       as.matrix(vals)
     })
 
-  # FIXME (jtobin): NaN for empty clusters; need to handle this?
   ybar     = lapply(clustered, colMeans)
   n        = lapply(clustered, nrow)
   pl       = function(lj, nj, ybarj) { (lj + nj * ybarj) / (1 + nj) }
@@ -64,8 +63,14 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
   centered = mapply('-', clustered, ybar, SIMPLIFY = F)
   ss       = lapply(centered, function(x) t(x) %*% x)
 
+  # NOTE (jtobin): the extra 'solve' calls here helped; came from
+  # http://thaines.com/content/misc/gaussian_conjugate_prior_cheat_sheet.pdf
+  # murphy's famous reference at
+  # http://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf may be incorrect.
   pt = function(wj, ssj, nj, ybarj) {
-    wj + ssj + nj / (1 + nj) * ((l - ybarj) %*% t(l - ybarj))
+    if (nj == 0) { wj } else {
+      solve(solve(wj) + ssj + nj / (1 + nj) * ((l - ybarj) %*% t(l - ybarj)))
+    }
   }
 
   tn   = mapply(pt, list(w), ss, n, ybar, SIMPLIFY = F)
@@ -74,49 +79,6 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
   cov  = mapply(function(i, j) solve((i + 1) * j), n, tn, SIMPLIFY = F)
   loc  = mapply(rmvnorm, 1, ln, cov, SIMPLIFY = F)
   list(m = loc, s = prec)
-}
-
-conditional_location_model = function(y, z, s, l, r) {
-  labelled  = data.frame(y, L1 = z)
-  clustered = lapply(seq_along(s),
-    function(j) {
-      labelled[which(labelled$L1 == j), !(names(labelled) %in% 'L1')]
-    })
-
-  n    = lapply(clustered, nrow)
-  yt   = lapply(clustered, function(j) { apply(j, MARGIN = 2, sum) })
-  num0 = mapply('%*%', yt, s, SIMPLIFY = F)
-
-  num  = lapply(num0, function(z) { z + (l %*% r) })
-  den0 = mapply('*', n, s, SIMPLIFY = F)
-  den  = lapply(den0, function(z) z + r)
-
-  v = lapply(den, solve)
-  m = mapply('%*%', num, v, SIMPLIFY = F)
-  mapply(rmvnorm, 1, m, v, SIMPLIFY = F)
-}
-
-conditional_precision_model = function(y, z, m, b, w) {
-  labelled = cbind(y, L1 = z)
-  cluster  = function(d, j) {
-    vals = d[which(d$L1 == j), !(names(d) %in% 'L1')]
-  }
-
-  clustered = lapply(seq_along(m), function(j) { cluster(labelled, j) })
-  yt = lapply(clustered, function(foo) { apply(foo, MARGIN = 2, sum) })
-
-  center = function(i, j) {
-    if (nrow(i) == 0) { as.matrix(i) } else { as.matrix(i - j) }
-  }
-
-  centered = mapply(center, clustered, m, SIMPLIFY = F)
-  ss       = lapply(centered, function(x) t(x) %*% x)
-  n        = lapply(clustered, nrow)
-  a        = lapply(n, function(j) j + b)
-  bet0     = lapply(ss, function(j) { (j + w * b) })
-  bet      = mapply('/', bet0, a, SIMPLIFY = F)
-
-  mapply(function(i, j) drop(rWishart(1, i, j)), a, bet, SIMPLIFY = F)
 }
 
 inverse_model = function(n, k, y, a, l, r, b, w) {
@@ -128,15 +90,14 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     s1 = ps$s
     l  = lmodel(y, p1, m1, s1)
     list(p = p1, m = m1, s = s1, z = z, l = l)
-    }
+  }
 
-  p0     = mixing_model(k, a)
-  m0     = location_model(k, l, r)
-  s0     = precision_model(k, b, w)
   params = list(
-      p = p0
-    , m = lapply(m0, function(j) { matrix(j, ncol = length(j)) })
-    , s = s0
+      p = mixing_model(k, a)
+    , m = lapply(
+              location_model(k, l, r)
+            , function(j) { matrix(j, ncol = length(j)) })
+    , s = precision_model(k, b, w)
     )
 
   acc = params
@@ -146,11 +107,11 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
       acc$p  = rbind(acc$p, params$p)
       acc$m  = mapply(rbind, acc$m, params$m, SIMPLIFY = F)
       # FIXME (jtobin): not logging intermediate covariances
-      #                 might be desirable to log some reduced ellipse dims
+      # possibly desirable to log eigenvalues
       acc$s  = params$s
       acc$z  = rbind(acc$z, params$z)
       acc$l  = c(acc$l, params$l)
     }
   acc
-  }
+}
 

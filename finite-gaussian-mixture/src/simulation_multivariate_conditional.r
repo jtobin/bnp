@@ -19,14 +19,10 @@ config = list(
 
 set.seed(222)
 
-origin = list(
-    p = mixing_model(config$k, config$a)
-  , m = location_model(config$k, config$l, config$r)
-  , s = precision_model(config$k, config$b, config$w)
-  )
-
-# FIXME generate a known/non-pathological configuration first, to test
-d  = model(config$k, config$l, config$r, config$b, config$w, config$n)
+d = list(
+    t(replicate(250, rnorm(2, c(5, 5))))
+  , t(replicate(250, rnorm(2, c(-5, -5))))
+  , t(replicate(500, rnorm(2))))
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 
@@ -39,13 +35,12 @@ params = inverse_model(
   , config$b, config$w
   )
 
-
-m_ts_plot = function(j) {
-  melted = as.data.frame(j, id.vars = c('V1', 'V2'))
-  ggplot(
-      melted
-    , aes(x = V1, y = V2, alpha = seq_along(V1), colour = seq_along(V1))) +
-    geom_line() + xlim(-2, 2) + ylim(-10, 10)
-}
+#m_ts_plot = function(j) {
+#  melted = as.data.frame(j, id.vars = c('V1', 'V2'))
+#  ggplot(
+#      melted
+#    , aes(x = V1, y = V2, alpha = seq_along(V1), colour = seq_along(V1))) +
+#    geom_line() + xlim(-2, 2) + ylim(-10, 10)
+#}
 
 
