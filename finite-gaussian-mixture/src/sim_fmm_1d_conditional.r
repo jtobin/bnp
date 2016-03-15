@@ -2,7 +2,7 @@ require(ggplot2)
 require(gridExtra)
 require(reshape2)
 
-source('../src/fmm_conditional.r')
+source('fmm_conditional.r')
 
 config = list(
     k = 3

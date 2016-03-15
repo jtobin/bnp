@@ -1,5 +1,4 @@
-require(gtools)
-require(magrittr)
+source('fmm_utils.r')
 
 mixing_model    = function(k, a) drop(rdirichlet(1, (rep(a, k))))
 label_model     = function(n, p) drop(rmultinom(1, size = n, prob = p))
@@ -19,7 +18,10 @@ data_model = function(config) {
   mapply(sampler, config[[1]], config[[2]], config[[3]])
 }
 
-model = function(k, n) parameter_model(k, n) %>% data_model
+model = function(k, n) {
+  params = parameter_model(k, n)
+  data_model(params)
+}
 
 lmodel = function(y, p, m, s) {
   score      = function(pr, mu, prec) { pr * dnorm(y, mu, sqrt(1 / prec)) }

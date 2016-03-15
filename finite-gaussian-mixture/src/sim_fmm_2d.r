@@ -1,7 +1,7 @@
 require(ggplot2)
 require(reshape2)
 
-source('../src/fmm_multivariate_generative.r')
+source('fmm_multivariate_generative.r')
 
 dimension = 2
 

@@ -1,7 +1,7 @@
 require(ggplot2)
 require(reshape2)
 
-source('../src/fmm_generative.r')
+source('fmm_generative.r')
 
 config = list(
     k = 4

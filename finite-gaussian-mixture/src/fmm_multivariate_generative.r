@@ -1,7 +1,6 @@
-require(gtools)
-require(magrittr)
 require(mvtnorm)
-require(plyr)
+
+source('fmm_utils.r')
 
 # Cluster probabilities via a symmetric Dirichlet distribution.
 #
@@ -32,7 +31,7 @@ label_model = function(n, p) {
 # Returns a list of 'k' locations, each having same dimension as 'l'.
 location_model  = function(k, l, r) {
   vals = rmvnorm(k, l, solve(r))
-  alply(vals, 1)
+  unlist(apply(vals, MARGIN = 1, list), recursive = F)
 }
 
 # Precision matrix, by cluster.
@@ -82,7 +81,8 @@ data_model = function(params) {
 
 # The finite Gaussian mixture model.
 model = function(k, l, r, b, w, n) {
-  parameter_model(k, l, r, b, w, n) %>% data_model
+  params = parameter_model(k, l, r, b, w, n)
+  data_model(params)
 }
 
 # Log-likelihood for the finite Gaussian mixture model.

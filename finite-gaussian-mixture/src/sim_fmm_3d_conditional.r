@@ -2,9 +2,9 @@ require(ggplot2)
 require(gridExtra)
 require(reshape2)
 
-source('../src/fmm_multivariate_conditional.r')
+source('fmm_multivariate_conditional.r')
 
-dimension = 2
+dimension = 3
 
 config = list(
     k = 3
@@ -12,31 +12,32 @@ config = list(
   , a = 1
   , l = rep(0, dimension)
   , r = diag(0.05, dimension)
-  , b = 2
+  , b = dimension
   , w = diag(1, dimension)
-  , n = 1000
+  , n = 5000
   )
 
 set.seed(222)
 
 d = list(
-    t(replicate(250, rnorm(2, c(5, 5))))
-  , t(replicate(250, rnorm(2, c(-5, -5))))
-  , t(replicate(500, rnorm(2))))
-dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
-m  = melt(dn, id.vars = c('x', 'y'))
+    t(replicate(250, rnorm(config$m, c(5, 5))))
+  , t(replicate(250, rnorm(config$m, c(-5, -5))))
+  , t(replicate(500, rnorm(config$m))))
+dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2], z = j[,3]) })
+m  = melt(dn, id.vars = c('x', 'y', 'z'))
 
 set.seed(990909)
 
 params = inverse_model(
-    config$n, config$k, m[, c('x', 'y')]
+    config$n, config$k, m[, c('x', 'y', 'z')]
   , config$a
   , config$l, config$r
   , config$b, config$w
   )
 
 dp = melt(data.frame(params$p))
-dm = melt(lapply(params$m, data.frame), id.vars = c('x', 'y'))
+
+dm = melt(lapply(params$m, data.frame), id.vars = c('x', 'y', 'z'))
 
 py = ggplot(m, aes(x, y)) + geom_point()
 

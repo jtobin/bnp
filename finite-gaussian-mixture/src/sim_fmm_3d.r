@@ -1,7 +1,7 @@
 require(reshape2)
 require(scatterplot3d)
 
-source('../src/fmm_multivariate_generative.r')
+source('fmm_multivariate_generative.r')
 
 dimension = 3
 

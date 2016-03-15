@@ -1,7 +1,7 @@
-require(gtools)
 require(mvtnorm)
 
 source('fmm_multivariate_generative.r')
+source('fmm_utils.r')
 
 # NOTE (jtobin): must load dplyr after plyr
 require(dplyr)

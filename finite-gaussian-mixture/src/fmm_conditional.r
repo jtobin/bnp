@@ -1,7 +1,7 @@
 require(dplyr)
-require(gtools)
 
 source('fmm_generative.r')
+source('fmm_utils.r')
 
 conditional_mixing_model = function(y, k, z, a) {
   labelled = data.frame(value = y, L1 = z)
