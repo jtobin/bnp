@@ -2,7 +2,7 @@ require(ggplot2)
 require(gridExtra)
 require(reshape2)
 
-source('fmm_multivariate_conditional.r')
+source('../src/fmm_multivariate_conditional.r')
 
 dimension = 2
 

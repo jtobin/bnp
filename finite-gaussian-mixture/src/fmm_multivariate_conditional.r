@@ -100,7 +100,8 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     , s = precision_model(k, b, w)
     )
 
-  acc = params
+  acc   = params
+  acc$s = list(acc$s)
   for (j in seq(n - 1)) {
       params = gibbs(params$p, params$m, params$s)
 

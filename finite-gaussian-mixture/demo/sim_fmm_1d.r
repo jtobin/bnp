@@ -1,14 +1,14 @@
-set.seed(42)
-
 require(ggplot2)
 require(reshape2)
 
-source('fmm_generative.r')
+source('../src/fmm_generative.r')
 
 config = list(
     k = 4
   , n = 10000
   )
+
+set.seed(42)
 
 d      = model(config$k, config$n)
 melted = melt(d)

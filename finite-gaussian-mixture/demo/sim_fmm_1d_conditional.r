@@ -1,10 +1,8 @@
-set.seed(990909)
-
 require(ggplot2)
 require(gridExtra)
 require(reshape2)
 
-source('fmm_conditional.r')
+source('../src/fmm_conditional.r')
 
 config = list(
     k = 3
@@ -21,6 +19,8 @@ origin = list(
   , m = location_model(config$k, config$l, config$r)
   , s = precision_model(config$k, config$b, config$w)
   )
+
+set.seed(990909)
 
 d = data.frame(
   value = c(rnorm(250, -3, 0.25), rnorm(500, 0, 0.25), rnorm(250, 3, 0.25)))
