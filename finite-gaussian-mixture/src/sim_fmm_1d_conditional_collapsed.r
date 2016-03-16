@@ -7,7 +7,7 @@ source('fmm_multivariate_conditional_collapsed.r')
 dimension = 1
 
 config = list(
-    k = 3
+    k = 4
   , m = dimension
   , a = 1
   , l = rep(0, dimension)
@@ -22,6 +22,7 @@ set.seed(222)
 d = list(
     as.matrix(replicate(100, rnorm(config$m, 5)))
   , as.matrix(replicate(100, rnorm(config$m, -5)))
+  , as.matrix(replicate(100, rnorm(config$m, 10)))
   , as.matrix(replicate(200, rnorm(config$m))))
 
 dn = lapply(d, function(j) { data.frame(x = j) })
