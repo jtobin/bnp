@@ -26,7 +26,7 @@ d = list(
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 
-set.seed(222) #990909)
+set.seed(990909)
 
 params = inverse_model(
     config$n, config$k, m[, c('x', 'y')]
