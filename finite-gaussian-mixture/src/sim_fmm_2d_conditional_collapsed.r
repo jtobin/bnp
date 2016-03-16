@@ -14,19 +14,19 @@ config = list(
   , r = diag(0.05, dimension)
   , b = 2
   , w = diag(1, dimension)
-  , n = 200
+  , n = 100
   )
 
 set.seed(222)
 
 d = list(
-    t(replicate(250, rnorm(2, c(5, 5))))
-  , t(replicate(250, rnorm(2, c(-5, -5))))
-  , t(replicate(500, rnorm(2))))
+    t(replicate(100, rnorm(2, c(5, 5))))
+  , t(replicate(100, rnorm(2, c(-5, -5))))
+  , t(replicate(200, rnorm(2))))
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 
-set.seed(990909)
+set.seed(222) #990909)
 
 params = inverse_model(
     config$n, config$k, m[, c('x', 'y')]

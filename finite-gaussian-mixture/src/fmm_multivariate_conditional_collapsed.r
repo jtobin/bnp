@@ -19,7 +19,6 @@ cluster_statistics = function(cluster, l, b, w) {
     )
 }
 
-# FIXME (jtobin): more efficient to cache sufficient statistics in gibbs loop
 conditional_label_model = function(y, k, z, a, l, r, b, w) {
   cluster_labels = seq(k)
   rows           = sample(seq(nrow(y)))
@@ -64,10 +63,9 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
     probs     = scores * weight / sum(scores * weight)
     new_label = sample(cluster_labels, size = 1, prob = probs)
 
-    # MUTATION
-    z[i] <- new_label
+    z[i] <<- new_label
     new_stats = cluster_statistics(y[which(z == new_label),], l, b, w)
-    sufficient_statistics[[new_label]] <- new_stats
+    sufficient_statistics[[new_label]] <<- new_stats
 
     new_label
   }
@@ -88,3 +86,5 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
   acc
 }
 
+
+# FIXME something fucked up somewhere
