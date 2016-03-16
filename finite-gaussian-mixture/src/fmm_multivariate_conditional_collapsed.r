@@ -70,7 +70,7 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
     new_label = sample(cluster_labels, size = 1, prob = probs)
 
     z[i] <<- new_label
-    new_stats = cluster_statistics(y[which(z == new_label),], l, b, w) # FIXME: ???
+    new_stats = cluster_statistics(y[which(z == new_label),], l, b, w)
     sufficient_statistics[[new_label]] <<- new_stats
 
     new_label
@@ -84,7 +84,6 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
   }
   params = list(z = sample(seq(k), size = nrow(y), replace = T))
   acc    = params
-  # FIXME (jtobin): can use replicate
   for (j in seq(n - 1)) {
     params = gibbs(params$z)
     acc$z  = rbind(acc$z, params$z)
@@ -92,5 +91,3 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
   acc
 }
 
-
-# FIXME something fucked up somewhere

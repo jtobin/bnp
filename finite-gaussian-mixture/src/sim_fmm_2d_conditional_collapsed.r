@@ -14,7 +14,7 @@ config = list(
   , r = diag(0.05, dimension)
   , b = 2
   , w = diag(1, dimension)
-  , n = 100
+  , n = 50
   )
 
 set.seed(222)
@@ -36,7 +36,7 @@ params = inverse_model(
   )
 
 early = data.frame(x = m$x, y = m$y, variable = params$z[1,])
-mid   = data.frame(x = m$x, y = m$y, variable = params$z[round(config$n * 3 / 4),])
+mid   = data.frame(x = m$x, y = m$y, variable = params$z[round(config$n * 1 / 2),])
 late  = data.frame(x = m$x, y = m$y, variable = params$z[config$n - 1,])
 
 p_early =
