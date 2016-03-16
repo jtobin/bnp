@@ -1,10 +1,11 @@
 require(mvtnorm)
 
 cluster_statistics = function(cluster, l, b, w) {
-  m        = ncol(cluster)
-  n        = nrow(cluster)
-  ybar     = colMeans(cluster)
-  centered = as.matrix(cluster) - ybar
+  mclust   = as.matrix(cluster)
+  m        = ncol(mclust)
+  n        = nrow(mclust)
+  ybar     = colMeans(mclust)
+  centered = as.matrix(mclust) - ybar
   ss       = t(centered) %*% centered
   ln       = (l + n * ybar) / (1 + n)
   tn       =
@@ -41,7 +42,7 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
   relabel = function(i) {
     old_label  = z[i]
     val        = y[i,]
-    y_censored = y[-i,]
+    y_censored = as.matrix(y[-i,])
     z_censored = z[-i]
     n_censored = sapply(
         cluster_labels
