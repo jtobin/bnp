@@ -1,6 +1,7 @@
 require(mvtnorm)
 
 cluster_statistics = function(cluster, l, b, w) {
+  m        = ncol(cluster)
   n        = nrow(cluster)
   ybar     = colMeans(cluster)
   centered = as.matrix(cluster) - ybar
@@ -20,9 +21,9 @@ cluster_statistics = function(cluster, l, b, w) {
 
 # FIXME (jtobin): more efficient to cache sufficient statistics in gibbs loop
 conditional_label_model = function(y, k, z, a, l, r, b, w) {
-  m = ncol(y)
   cluster_labels = seq(k)
   rows           = sample(seq(nrow(y)))
+  m              = ncol(y)
 
   initial_clusters = sapply(
       cluster_labels
@@ -73,8 +74,7 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
   sapply(rows, relabel)
 }
 
-inverse_model = function(n, y, k, a, l, r, b, w) {
-  # FIXME (jtobin): add likelihood calculation
+inverse_model = function(n, k, y, a, l, r, b, w) {
   gibbs = function(z0) {
     list(z = conditional_label_model(y, k, z0, a, l, r, b, w))
   }
@@ -87,52 +87,4 @@ inverse_model = function(n, y, k, a, l, r, b, w) {
   }
   acc
 }
-
-
-
-# development
-
-require(reshape2) # FIXME move to sim
-require(ggplot2)
-require(gridExtra)
-
-d = list(
-    t(replicate(250, rnorm(2, c(5, 5))))
-  , t(replicate(250, rnorm(2, c(-5, -5))))
-  , t(replicate(500, rnorm(2))))
-dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
-m  = melt(dn, id.vars = c('x', 'y'))
-
-dimension = 2
-
-config = list(
-    k = 3
-  , m = dimension
-  , a = 1
-  , l = rep(0, dimension)
-  , r = diag(0.05, dimension)
-  , b = 2
-  , w = diag(1, dimension)
-  , n = 1000
-  )
-
-foo = inverse_model(100, y, 3, a, l, r, b, w)
-
-early = data.frame(x = y$x, y = y$y, variable = foo$z[1,])
-mid   = data.frame(x = y$x, y = y$y, variable = foo$z[round(80),])
-late  = data.frame(x = y$x, y = y$y, variable = foo$z[100 - 1,])
-
-p_early =
-  ggplot(early, aes(x, y, colour = factor(variable), fill = factor(variable))) +
-    geom_point(alpha = 0.5)
-
-p_mid =
-  ggplot(mid, aes(x, y, colour = factor(variable), fill = factor(variable))) +
-    geom_point(alpha = 0.5)
-
-p_late =
-  ggplot(late, aes(x, y, value, colour = factor(variable), fill = factor(variable))) +
-    geom_point(alpha = 0.5)
-
-inferred_plots = grid.arrange(p_early, p_mid, p_late, ncol = 3)
 
