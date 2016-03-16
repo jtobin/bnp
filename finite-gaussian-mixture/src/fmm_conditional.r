@@ -19,7 +19,7 @@ conditional_mixing_model = function(y, k, z, a) {
       })
 
   drop(rdirichlet(1, concentration))
-  }
+}
 
 conditional_label_model = function(y, p, m, s) {
   scorer     = function(mix, mu, prec) {
@@ -44,7 +44,7 @@ conditional_label_model = function(y, p, m, s) {
     , MARGIN = 1
     , function(row) { sample(seq_along(m), size = 1, prob = row) }
     )
-  }
+}
 
 conditional_location_model = function(y, z, s, l, r) {
   clustered = group_by(data.frame(value = y, L1 = z), L1)
@@ -75,7 +75,7 @@ conditional_location_model = function(y, z, s, l, r) {
   v  = 1 / (n * s + r)
 
   mapply(rnorm, 1, m, sqrt(v))
-  }
+}
 
 conditional_precision_model = function(y, z, m, b, w) {
   labelled  = data.frame(value = y, L1 = z)
@@ -105,7 +105,7 @@ conditional_precision_model = function(y, z, m, b, w) {
   bet = (w * b + ss) / a
 
   mapply(function(a, b) rgamma(1, a, b), a, bet)
-  }
+}
 
 inverse_model = function(n, k, y, a, l, r, b, w) {
   gibbs = function(p0, m0, s0) {
@@ -132,5 +132,5 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
       acc$l  = c(acc$l, params$l)
     }
   acc
-  }
+}
 
