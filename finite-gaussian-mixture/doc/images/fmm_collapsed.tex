@@ -6,7 +6,11 @@
 \begin{document}
 
 \begin{tikzpicture}
-  \tikzstyle{random}=[circle, minimum size = 10mm, thick, draw = black!80, node distance = 16mm]
+  \tikzstyle{random}=[
+      circle, minimum size = 10mm, thick
+    , draw = black!80
+    , node distance = 16mm
+    ]
   \tikzstyle{observed}=[
       circle, minimum size = 10mm, thick
     , draw = black!80, fill = black!10
@@ -15,18 +19,12 @@
   \tikzstyle{connect}=[-latex, thick]
   \tikzstyle{plate}=[rectangle, draw = black!100]
 
-  \node[random] (p) { $\pi$ };
-  \node[random] (z) [below of = p] { $z_{i}$ };
+  \node[random] (z) { $z_{i}$ };
   \node[observed] (y) [below of = z] { $y_{i}$ };
-  \node[random] (theta) [below of = y] { $\theta_{k}$ };
 
-  \path (p) edge [connect] (z)
-        (z) edge [connect] (y);
-
-  \path (theta) edge [connect] (y);
+  \path (z) edge [connect] (y);
 
   \node[plate, inner sep = 1.0mm, fit = (z) (y)] { };
-  \node[plate, inner sep = 1.0mm, fit = (theta)] { };
 
 \end{tikzpicture}
 

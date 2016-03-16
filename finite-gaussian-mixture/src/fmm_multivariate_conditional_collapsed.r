@@ -50,7 +50,7 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
 
     score_by_cluster = function(j) {
       sufficient_stats = if (j == old_label) {
-          cluster  = y_censored[which(z_censored == j), ]
+          cluster = y_censored[which(z_censored == j), ]
           sufficient_statistics[[j]] <<- cluster_statistics(cluster, l, b, w)
           sufficient_statistics[[j]]
         } else {
