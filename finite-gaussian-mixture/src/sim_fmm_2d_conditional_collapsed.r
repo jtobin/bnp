@@ -11,27 +11,26 @@ config = list(
   , m = dimension
   , a = 1
   , l = rep(0, dimension)
-  , r = diag(0.05, dimension)
-  , b = 2
-  , w = diag(1, dimension)
-  , n = 50
+  , b = dimension
+  , w = diag(0.05, dimension)
+  , n = 25
   )
 
 set.seed(222)
 
 d = list(
-    t(replicate(100, rnorm(config$m, c(5, 5))))
-  , t(replicate(100, rnorm(config$m, c(-5, -5))))
-  , t(replicate(200, rnorm(config$m))))
+    t(replicate(250, rnorm(config$m, c(5, 5))))
+  , t(replicate(250, rnorm(config$m, c(-5, -5))))
+  , t(replicate(500, rnorm(config$m))))
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 
-set.seed(990909)
+set.seed(222)
 
 params = inverse_model(
-    config$n, config$k, m[, c('x', 'y')]
+    config$n, config$k, as.matrix(m[, c('x', 'y')])
   , config$a
-  , config$l, config$r
+  , config$l
   , config$b, config$w
   )
 

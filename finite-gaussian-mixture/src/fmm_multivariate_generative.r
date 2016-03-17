@@ -1,4 +1,5 @@
 require(mvtnorm)
+require(plyr)
 
 source('fmm_utils.r')
 

@@ -1,11 +1,17 @@
 require(mvtnorm)
 
 cluster_statistics = function(cluster, l, b, w) {
-  mclust   = as.matrix(cluster)
+  mclust   =
+    # R, seriously?
+    if (is.null(dim(cluster))) {
+      matrix(cluster, ncol = ncol(w))
+    } else {
+      as.matrix(cluster)
+    }
   m        = ncol(mclust)
   n        = nrow(mclust)
   ybar     = colMeans(mclust)
-  centered = as.matrix(mclust) - ybar
+  centered = mclust - ybar
   ss       = t(centered) %*% centered
   ln       = (l + n * ybar) / (1 + n)
   tn       =
@@ -25,7 +31,7 @@ cluster_statistics = function(cluster, l, b, w) {
     )
 }
 
-conditional_label_model = function(y, k, z, a, l, r, b, w) {
+conditional_label_model = function(y, k, z, a, l, b, w) {
   cluster_labels = seq(k)
   rows           = seq(nrow(y))
   m              = ncol(y)
@@ -79,9 +85,9 @@ conditional_label_model = function(y, k, z, a, l, r, b, w) {
   sapply(rows, relabel)
 }
 
-inverse_model = function(n, k, y, a, l, r, b, w) {
+inverse_model = function(n, k, y, a, l, b, w) {
   gibbs = function(z0) {
-    list(z = conditional_label_model(y, k, z0, a, l, r, b, w))
+    list(z = conditional_label_model(y, k, z0, a, l, b, w))
   }
   params = list(z = sample(seq(k), size = nrow(y), replace = T))
   acc    = params

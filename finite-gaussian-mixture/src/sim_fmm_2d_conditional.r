@@ -20,9 +20,9 @@ config = list(
 set.seed(222)
 
 d = list(
-    t(replicate(250, rnorm(2, c(5, 5))))
-  , t(replicate(250, rnorm(2, c(-5, -5))))
-  , t(replicate(500, rnorm(2))))
+    t(replicate(250, rnorm(dimension, c(5, 5))))
+  , t(replicate(250, rnorm(dimension, c(-5, -5))))
+  , t(replicate(500, rnorm(dimension))))
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 

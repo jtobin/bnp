@@ -11,8 +11,7 @@ config = list(
   , m = dimension
   , a = 1
   , l = rep(0, dimension)
-  , r = diag(0.05, dimension)
-  , b = 2
+  , b = dimension
   , w = diag(1, dimension)
   , n = 50
   )
@@ -34,7 +33,7 @@ set.seed(990909)
 params = inverse_model(
     config$n, config$k, as.matrix(m[, c('x')])
   , config$a
-  , config$l, config$r
+  , config$l
   , config$b, config$w
   )
 
