@@ -88,8 +88,22 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     ps = conditional_cluster_parameters_model(y, k, z, l, r, b, w)
     m1 = ps$m
     s1 = ps$s
-    l  = lmodel(y, p1, m1, s1)
-    list(p = p1, m = m1, s = s1, z = z, l = l)
+    ll = lmodel(y, p1, m1, s1)
+
+    # both likelihood calculations seem very noisy; probably due to label
+    # switching when estimating cluster probabilities
+    #
+    # clustered = lapply(seq(k),
+    #   function(j) {
+    #     vals = y[which(z == j),]
+    #     as.matrix(vals)
+    #   })
+    # ps    = lapply(clustered, function(j) { nrow(j) / nrow(y) })
+    # mus   = lapply(clustered, colMeans)
+    # precs = lapply(clustered, function(j) (solve(cov(j))))
+    # ll    = lmodel(y, ps, mus, precs)
+
+    list(p = p1, m = m1, s = s1, z = z, l = ll)
   }
 
   params = list(

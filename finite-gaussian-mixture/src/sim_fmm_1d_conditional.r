@@ -11,13 +11,7 @@ config = list(
   , r = 0.01
   , b = 1
   , w = 1
-  , n = 500
-  )
-
-origin = list(
-    p = mixing_model(config$k, config$a)
-  , m = location_model(config$k, config$l, config$r)
-  , s = precision_model(config$k, config$b, config$w)
+  , n = 1000
   )
 
 set.seed(990909)

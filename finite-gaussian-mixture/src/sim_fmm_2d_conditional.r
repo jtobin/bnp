@@ -13,7 +13,7 @@ config = list(
   , l = rep(0, dimension)
   , r = diag(0.05, dimension)
   , b = 2
-  , w = diag(1, dimension)
+  , w = diag(0.05, dimension)
   , n = 1000
   )
 
@@ -26,7 +26,7 @@ d = list(
 dn = lapply(d, function(j) { data.frame(x = j[,1], y = j[,2]) })
 m  = melt(dn, id.vars = c('x', 'y'))
 
-set.seed(990909)
+set.seed(222)
 
 params = inverse_model(
     config$n, config$k, m[, c('x', 'y')]
@@ -37,6 +37,7 @@ params = inverse_model(
 
 dp = melt(data.frame(params$p))
 dm = melt(lapply(params$m, data.frame), id.vars = c('x', 'y'))
+dl = melt(as.data.frame(params$l))
 
 py = ggplot(m, aes(x, y)) + geom_point()
 
@@ -45,6 +46,9 @@ pp = ggplot(dp, aes(seq_along(value), value, colour = variable)) +
 
 pm = ggplot(dm, aes(x, y, colour = factor(L1), fill = factor(L1))) +
        geom_point(alpha = 0.5)
+
+pl = ggplot(dl, aes(x = seq_along(value), y = value)) +
+       geom_line(colour = 'darkblue')
 
 early = data.frame(x = m$x, y = m$y, variable = params$z[1,])
 mid   = data.frame(x = m$x, y = m$y, variable = params$z[round(config$n / 2),])

@@ -1,5 +1,7 @@
 require(mvtnorm)
 
+source('fmm_multivariate_generative.r')
+
 cluster_statistics = function(cluster, l, b, w) {
   mclust   =
     # R, seriously?
@@ -87,13 +89,26 @@ conditional_label_model = function(y, k, z, a, l, b, w) {
 
 inverse_model = function(n, k, y, a, l, b, w) {
   gibbs = function(z0) {
-    list(z = conditional_label_model(y, k, z0, a, l, b, w))
+    z = conditional_label_model(y, k, z0, a, l, b, w)
+    clustered = lapply(seq(k),
+      function(j) {
+        vals = y[which(z == j),]
+        as.matrix(vals)
+      })
+
+    ps    = lapply(clustered, function(j) { nrow(j) / nrow(y) })
+    mus   = lapply(clustered, colMeans)
+    precs = lapply(clustered, function(j) (solve(cov(j))))
+    ll    = lmodel(y, ps, mus, precs)
+    list(z = z, ll = ll)
   }
+
   params = list(z = sample(seq(k), size = nrow(y), replace = T))
   acc    = params
   for (j in seq(n - 1)) {
     params = gibbs(params$z)
     acc$z  = rbind(acc$z, params$z)
+    acc$ll = c(acc$ll, params$ll)
   }
   acc
 }

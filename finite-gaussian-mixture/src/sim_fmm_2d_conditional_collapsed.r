@@ -13,7 +13,7 @@ config = list(
   , l = rep(0, dimension)
   , b = dimension
   , w = diag(0.05, dimension)
-  , n = 25
+  , n = 100
   )
 
 set.seed(222)
@@ -50,5 +50,9 @@ p_late =
   ggplot(late, aes(x, y, value, colour = factor(variable), fill = factor(variable))) +
     geom_point(alpha = 0.5)
 
-inferred_plots = grid.arrange(p_early, p_mid, p_late, ncol = 3)
+dl = melt(as.data.frame(params$ll))
 
+pl = ggplot(dl, aes(x = seq_along(value), y = value)) +
+       geom_line(colour = 'darkblue')
+
+inferred_plots = grid.arrange(p_early, p_mid, p_late, ncol = 3)
