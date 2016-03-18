@@ -28,18 +28,8 @@ conditional_label_model = function(y, p, m, s) {
 
   unweighted = mapply(scorer, p, m, s)
   weights    = 1 / apply(unweighted, MARGIN = 1, sum)
-  weighted   = weights * unweighted
+  probs      = weights * unweighted
 
-  probabilize = function(row) {
-    rs = sum(row)
-    if (rs == 0 || is.na(rs) || is.nan(rs)) {
-      drop(rdirichlet(1, rep(1, length(m))))
-    } else {
-      row
-    }
-  }
-
-  probs    = t(apply(weighted, MARGIN = 1, probabilize))
   clusters = apply(
       probs
     , MARGIN = 1
@@ -58,7 +48,13 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
 
   ybar     = lapply(clustered, colMeans)
   n        = lapply(clustered, nrow)
-  pl       = function(lj, nj, ybarj) { (lj + nj * ybarj) / (1 + nj) }
+  pl       = function(lj, nj, ybarj) {
+    if (nj == 0) {
+      lj
+    } else {
+      (lj + nj * ybarj) / (1 + nj)
+    }
+  }
   ln       = mapply(pl, list(l), n, ybar, SIMPLIFY = F)
   centered = mapply('-', clustered, ybar, SIMPLIFY = F)
   ss       = lapply(centered, function(x) t(x) %*% x)
@@ -66,7 +62,7 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
   # NOTE (jtobin): the extra 'solve' calls here helped; came from
   # http://thaines.com/content/misc/gaussian_conjugate_prior_cheat_sheet.pdf
   # murphy's famous reference at
-  # http://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf may be incorrect.
+  # http://www.cs.ubc.ca/~murphyk/Papers/bayesGauss.pdf is incorrect.
   pt = function(wj, ssj, nj, ybarj) {
     if (nj == 0) { wj } else {
       solve(solve(wj) + ssj + nj / (1 + nj) * ((l - ybarj) %*% t(l - ybarj)))
@@ -78,6 +74,7 @@ conditional_cluster_parameters_model = function(y, k, z, l, r, b, w) {
   prec = mapply(function(i, j) drop(rWishart(1, i, j)), bn, tn, SIMPLIFY = F)
   cov  = mapply(function(i, j) solve((i + 1) * j), n, tn, SIMPLIFY = F)
   loc  = mapply(rmvnorm, 1, ln, cov, SIMPLIFY = F)
+  if (any(is.nan(unlist(loc)))) { browser() }
   list(m = loc, s = prec)
 }
 
@@ -89,19 +86,6 @@ inverse_model = function(n, k, y, a, l, r, b, w) {
     m1 = ps$m
     s1 = ps$s
     ll = lmodel(y, p1, m1, s1)
-
-    # both likelihood calculations seem very noisy; probably due to label
-    # switching when estimating cluster probabilities
-    #
-    # clustered = lapply(seq(k),
-    #   function(j) {
-    #     vals = y[which(z == j),]
-    #     as.matrix(vals)
-    #   })
-    # ps    = lapply(clustered, function(j) { nrow(j) / nrow(y) })
-    # mus   = lapply(clustered, colMeans)
-    # precs = lapply(clustered, function(j) (solve(cov(j))))
-    # ll    = lmodel(y, ps, mus, precs)
 
     list(p = p1, m = m1, s = s1, z = z, l = ll)
   }
